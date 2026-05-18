@@ -1,0 +1,77 @@
+const menuItems = ['Home', 'Tools', 'Scan', 'Profile', 'Settings']
+
+function Sidebar(): React.JSX.Element {
+  return (
+    <aside
+      style={{
+        borderRight: '1px solid rgba(148, 163, 184, 0.16)',
+        background: 'rgba(15, 23, 42, 0.72)',
+        padding: '24px 18px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between'
+      }}
+    >
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 14,
+              background: 'linear-gradient(135deg, #2563eb, #22c55e)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 800
+            }}
+          >
+            D
+          </div>
+
+          <div>
+            <strong style={{ display: 'block', fontSize: 18 }}>DevClone</strong>
+            <span style={{ color: '#94a3b8', fontSize: 12 }}>v0.1 local</span>
+          </div>
+        </div>
+
+        <nav style={{ display: 'grid', gap: 10 }}>
+          {menuItems.map((item, index) => (
+            <button
+              key={item}
+              style={{
+                textAlign: 'left',
+                border: 'none',
+                borderRadius: 12,
+                padding: '12px 14px',
+                color: index === 0 ? '#ffffff' : '#94a3b8',
+                background: index === 0 ? 'rgba(37, 99, 235, 0.95)' : 'transparent',
+                cursor: 'pointer',
+                fontWeight: 600
+              }}
+            >
+              {item}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      <div
+        style={{
+          border: '1px solid rgba(148, 163, 184, 0.16)',
+          borderRadius: 16,
+          padding: 14,
+          background: 'rgba(15, 23, 42, 0.9)'
+        }}
+      >
+        <div style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>STATUS DO MVP</div>
+        <div style={{ fontWeight: 700 }}>Visual base</div>
+        <div style={{ color: '#94a3b8', fontSize: 13, marginTop: 4 }}>
+          Próximo passo: scan real do ambiente.
+        </div>
+      </div>
+    </aside>
+  )
+}
+
+export default Sidebar
