@@ -7,8 +7,6 @@ import { useEnvironmentScan } from './hooks/useEnvironmentScan'
 import type { EnvironmentScanResult } from '../../shared/scan.types'
 import type { DevTool, ToolStatus } from './types/tools'
 
-const scannableToolIds = ['git', 'node', 'vscode']
-
 function formatLastScanAt(lastScanAt: string | null): string {
   if (!lastScanAt) return 'Nenhum scan realizado'
 
@@ -18,8 +16,8 @@ function formatLastScanAt(lastScanAt: string | null): string {
   }).format(new Date(lastScanAt))
 }
 
-function isScannableTool(tool: DevTool): boolean {
-  return scannableToolIds.includes(tool.id)
+function getScannedTool(tool: DevTool, scanResult: EnvironmentScanResult | null) {
+  return scanResult?.tools.find((scannedTool) => scannedTool.id === tool.id) ?? null
 }
 
 function getToolScanStatus(
@@ -27,20 +25,21 @@ function getToolScanStatus(
   scanResult: EnvironmentScanResult | null,
   loading: boolean
 ): ToolStatus {
-  if (loading && isScannableTool(tool)) return 'pending'
-  if (!scanResult || !(tool.id in scanResult)) return tool.status
+  if (loading) return 'pending'
 
-  const result = scanResult[tool.id as keyof EnvironmentScanResult]
-  return result.installed ? 'installed' : 'missing'
+  const result = getScannedTool(tool, scanResult)
+  if (!result) return tool.status
+
+  return result.status
 }
 
 function getToolScanVersion(
   tool: DevTool,
   scanResult: EnvironmentScanResult | null
 ): string | undefined {
-  if (!scanResult || !(tool.id in scanResult)) return tool.version
+  const result = getScannedTool(tool, scanResult)
+  if (!result) return tool.version
 
-  const result = scanResult[tool.id as keyof EnvironmentScanResult]
   return result.version ?? undefined
 }
 
@@ -51,7 +50,7 @@ function App(): React.JSX.Element {
     status: getToolScanStatus(tool, scanResult, loading),
     version: getToolScanVersion(tool, scanResult)
   }))
-  const installedTools = tools.filter((tool) => tool.status === 'installed').length
+  const installedTools = tools.filter((tool) => tool.status === 'healthy').length
   const missingTools = tools.filter((tool) => tool.status === 'missing').length
   const totalTools = mockTools.length
 

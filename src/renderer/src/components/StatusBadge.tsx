@@ -7,13 +7,13 @@ type StatusBadgeProps = {
 }
 
 function getStatusLabel(status: ToolStatus): string {
-  if (status === 'installed') return 'Instalado'
+  if (status === 'healthy') return 'Instalado'
   if (status === 'missing') return 'Ausente'
   return 'Pendente'
 }
 
 function getStatusStyle(status: ToolStatus): CSSProperties {
-  if (status === 'installed') {
+  if (status === 'healthy') {
     return {
       color: '#34d399',
       background: 'rgba(52, 211, 153, 0.12)',

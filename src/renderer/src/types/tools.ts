@@ -1,15 +1,8 @@
-export type ToolStatus = 'installed' | 'missing' | 'pending'
+import type { ToolCatalogItem } from '../../../shared/tools/catalog'
 
-export type DevToolId =
-  | 'git'
-  | 'node'
-  | 'php'
-  | 'composer'
-  | 'laravel'
-  | 'vscode'
-  | 'docker'
-  | 'mysql'
-  | 'postman'
+export type ToolStatus = 'healthy' | 'missing' | 'pending'
+
+export type DevToolId = ToolCatalogItem['id']
 
 export type DevTool = {
   id: DevToolId

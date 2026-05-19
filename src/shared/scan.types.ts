@@ -1,13 +1,18 @@
+import type { ToolCatalogItem } from './tools/catalog'
+
+export type ToolScanStatus = 'healthy' | 'missing'
+
 export type ToolScanResult = {
+  id: ToolCatalogItem['id']
   name: string
   installed: boolean
   version: string | null
+  category: string
+  status: ToolScanStatus
 }
 
 export type EnvironmentScanResult = {
-  git: ToolScanResult
-  node: ToolScanResult
-  vscode: ToolScanResult
+  tools: ToolScanResult[]
 }
 
 export type LastScanStorage = {

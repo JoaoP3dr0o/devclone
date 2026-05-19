@@ -1,53 +1,34 @@
 import type { EnvironmentScanResult, ToolScanResult } from '../../shared/scan.types'
+import { toolsCatalog, type ToolCatalogItem } from '../../shared/tools/catalog'
 
 import { executeCommand } from './command.service'
 
-function extractVersion(output: string | null): string | null {
+function extractVersion(output: string | null, versionRegex: string): string | null {
   if (!output) return null
 
-  const version = output.match(/\d+\.\d+\.\d+/)
+  const version = output.match(new RegExp(versionRegex))
   return version?.[0] ?? null
 }
 
-export async function scanGit(): Promise<ToolScanResult> {
-  const output = await executeCommand('git --version')
-  const version = extractVersion(output)
+async function scanTool(tool: ToolCatalogItem): Promise<ToolScanResult> {
+  const output = await executeCommand(tool.command)
+  const version = extractVersion(output, tool.versionRegex)
+  const installed = version !== null
 
   return {
-    name: 'Git',
-    installed: version !== null,
-    version
-  }
-}
-
-export async function scanNode(): Promise<ToolScanResult> {
-  const output = await executeCommand('node -v')
-  const version = extractVersion(output)
-
-  return {
-    name: 'Node.js',
-    installed: version !== null,
-    version
-  }
-}
-
-export async function scanVSCode(): Promise<ToolScanResult> {
-  const output = await executeCommand('code --version')
-  const version = extractVersion(output)
-
-  return {
-    name: 'VS Code',
-    installed: version !== null,
-    version
+    id: tool.id,
+    name: tool.name,
+    installed,
+    version,
+    category: tool.category,
+    status: installed ? 'healthy' : 'missing'
   }
 }
 
 export async function scanEnvironment(): Promise<EnvironmentScanResult> {
-  const [git, node, vscode] = await Promise.all([scanGit(), scanNode(), scanVSCode()])
+  const tools = await Promise.all(toolsCatalog.map((tool) => scanTool(tool)))
 
   return {
-    git,
-    node,
-    vscode
+    tools
   }
 }

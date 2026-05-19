@@ -31,7 +31,12 @@ export async function loadLastScan(): Promise<LastScanStorage | null> {
     const content = await readFile(filePath, 'utf-8')
     const parsed = JSON.parse(content) as LastScanStorage
 
-    if (parsed.version !== STORAGE_VERSION || !parsed.lastScanAt || !parsed.tools) {
+    if (
+      parsed.version !== STORAGE_VERSION ||
+      !parsed.lastScanAt ||
+      !parsed.tools ||
+      !Array.isArray(parsed.tools.tools)
+    ) {
       return null
     }
 
