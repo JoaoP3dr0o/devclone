@@ -4,6 +4,8 @@ import StepList from './components/StepList'
 import ToolList from './components/ToolList'
 import { mockTools } from './data/mockTools'
 import { useEnvironmentScan } from './hooks/useEnvironmentScan'
+import { calculateProfileCompatibility } from '../../shared/profiles/compatibility'
+import { activeDefaultProfile } from '../../shared/profiles/defaultProfiles'
 import type { EnvironmentScanResult } from '../../shared/scan.types'
 import type { DevTool, ToolStatus } from './types/tools'
 
@@ -50,11 +52,7 @@ function App(): React.JSX.Element {
     status: getToolScanStatus(tool, scanResult, loading),
     version: getToolScanVersion(tool, scanResult)
   }))
-  const installedTools = tools.filter((tool) =>
-    ['healthy', 'warning', 'outdated'].includes(tool.status)
-  ).length
-  const missingTools = tools.filter((tool) => tool.status === 'missing').length
-  const totalTools = mockTools.length
+  const compatibility = calculateProfileCompatibility(scanResult, activeDefaultProfile)
 
   return (
     <Layout>
@@ -164,10 +162,11 @@ function App(): React.JSX.Element {
             marginBottom: 28
           }}
         >
-          <StatCard label="Ferramentas suportadas" value={totalTools.toString()} />
-          <StatCard label="Instaladas" value={installedTools.toString()} />
-          <StatCard label="Ausentes" value={missingTools.toString()} />
-          <StatCard label="Perfil local" value="Não criado" />
+          <StatCard label="Profile ativo" value={activeDefaultProfile.name} />
+          <StatCard label="Compatibilidade" value={`${compatibility.score}%`} />
+          <StatCard label="OK" value={compatibility.healthy.length.toString()} />
+          <StatCard label="Ausentes" value={compatibility.missing.length.toString()} />
+          <StatCard label="Desatualizadas" value={compatibility.outdated.length.toString()} />
         </section>
 
         <section
