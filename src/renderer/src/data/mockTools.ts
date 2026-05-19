@@ -16,6 +16,8 @@ export const mockTools: DevTool[] = toolsCatalog.map((tool) => {
     category: tool.category,
     description: tool.description,
     status: version ? 'healthy' : 'missing',
-    version
+    version,
+    minimumVersion: tool.minimumVersion,
+    recommendedVersion: tool.recommendedVersion
   }
 })

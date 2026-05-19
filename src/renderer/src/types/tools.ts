@@ -1,4 +1,4 @@
-import type { ToolCatalogItem } from '../../../shared/tools/catalog'
+import type { ToolCatalogItem } from '@shared/tools/catalog'
 
 export type ToolStatus = 'healthy' | 'warning' | 'outdated' | 'missing' | 'pending'
 
@@ -11,4 +11,6 @@ export type DevTool = {
   description: string
   status: ToolStatus
   version?: string
+  minimumVersion?: string
+  recommendedVersion?: string
 }
