@@ -5,7 +5,8 @@ import { electronAPI } from '@electron-toolkit/preload'
 const api = {}
 const electron = {
   ...electronAPI,
-  scanEnvironment: () => ipcRenderer.invoke('scan:environment')
+  scanEnvironment: () => ipcRenderer.invoke('scan:environment'),
+  loadLastScan: () => ipcRenderer.invoke('load:lastScan')
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

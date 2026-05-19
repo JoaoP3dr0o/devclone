@@ -9,3 +9,9 @@ export type EnvironmentScanResult = {
   node: ToolScanResult
   vscode: ToolScanResult
 }
+
+export type LastScanStorage = {
+  version: 1
+  lastScanAt: string
+  tools: EnvironmentScanResult
+}

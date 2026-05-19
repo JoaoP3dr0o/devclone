@@ -9,6 +9,15 @@ import type { DevTool, ToolStatus } from './types/tools'
 
 const scannableToolIds = ['git', 'node', 'vscode']
 
+function formatLastScanAt(lastScanAt: string | null): string {
+  if (!lastScanAt) return 'Nenhum scan realizado'
+
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short'
+  }).format(new Date(lastScanAt))
+}
+
 function isScannableTool(tool: DevTool): boolean {
   return scannableToolIds.includes(tool.id)
 }
@@ -36,7 +45,7 @@ function getToolScanVersion(
 }
 
 function App(): React.JSX.Element {
-  const { loading, error, scanResult, scanEnvironment } = useEnvironmentScan()
+  const { loading, error, scanResult, lastScanAt, scanEnvironment } = useEnvironmentScan()
   const tools = mockTools.map((tool) => ({
     ...tool,
     status: getToolScanStatus(tool, scanResult, loading),
@@ -91,6 +100,9 @@ function App(): React.JSX.Element {
               O DevClone vai ajudar desenvolvedores Laravel + React a detectar ferramentas,
               salvar um perfil local e futuramente restaurar tudo em uma nova máquina após login.
             </p>
+            <div style={{ color: '#94a3b8', fontSize: 13, marginTop: 10 }}>
+              Ultimo scan: {formatLastScanAt(lastScanAt)}
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
