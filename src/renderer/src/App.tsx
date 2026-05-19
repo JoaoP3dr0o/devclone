@@ -9,6 +9,11 @@ function App(): React.JSX.Element {
   const missingTools = mockTools.filter((tool) => tool.status === 'missing').length
   const totalTools = mockTools.length
 
+  async function handleScanEnvironment(): Promise<void> {
+    const result = await window.electron.scanEnvironment()
+    console.log('Environment scan result:', result)
+  }
+
   return (
     <Layout>
       <section style={{ padding: 32 }}>
@@ -57,6 +62,7 @@ function App(): React.JSX.Element {
 
           <div style={{ display: 'flex', gap: 12 }}>
             <button
+              onClick={handleScanEnvironment}
               style={{
                 border: 'none',
                 borderRadius: 12,
