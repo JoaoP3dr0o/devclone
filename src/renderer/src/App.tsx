@@ -3,30 +3,63 @@ import StatCard from './components/StatCard'
 import StepList from './components/StepList'
 import ToolList from './components/ToolList'
 import { mockTools } from './data/mockTools'
+import { useEnvironmentScan } from './hooks/useEnvironmentScan'
+import type { EnvironmentScanResult } from '../../shared/scan.types'
+import type { DevTool, ToolStatus } from './types/tools'
+
+const scannableToolIds = ['git', 'node', 'vscode']
+
+function isScannableTool(tool: DevTool): boolean {
+  return scannableToolIds.includes(tool.id)
+}
+
+function getToolScanStatus(
+  tool: DevTool,
+  scanResult: EnvironmentScanResult | null,
+  loading: boolean
+): ToolStatus {
+  if (loading && isScannableTool(tool)) return 'pending'
+  if (!scanResult || !(tool.id in scanResult)) return tool.status
+
+  const result = scanResult[tool.id as keyof EnvironmentScanResult]
+  return result.installed ? 'installed' : 'missing'
+}
+
+function getToolScanVersion(
+  tool: DevTool,
+  scanResult: EnvironmentScanResult | null
+): string | undefined {
+  if (!scanResult || !(tool.id in scanResult)) return tool.version
+
+  const result = scanResult[tool.id as keyof EnvironmentScanResult]
+  return result.version ?? undefined
+}
 
 function App(): React.JSX.Element {
-  const installedTools = mockTools.filter((tool) => tool.status === 'installed').length
-  const missingTools = mockTools.filter((tool) => tool.status === 'missing').length
+  const { loading, error, scanResult, scanEnvironment } = useEnvironmentScan()
+  const tools = mockTools.map((tool) => ({
+    ...tool,
+    status: getToolScanStatus(tool, scanResult, loading),
+    version: getToolScanVersion(tool, scanResult)
+  }))
+  const installedTools = tools.filter((tool) => tool.status === 'installed').length
+  const missingTools = tools.filter((tool) => tool.status === 'missing').length
   const totalTools = mockTools.length
-
-  async function handleScanEnvironment(): Promise<void> {
-    const result = await window.electron.scanEnvironment()
-    console.log('Environment scan result:', result)
-  }
 
   return (
     <Layout>
-      <section style={{ padding: 32 }}>
+      <section style={{ padding: 32, minWidth: 0 }}>
         <header
           style={{
             display: 'flex',
             alignItems: 'flex-start',
             justifyContent: 'space-between',
             gap: 24,
-            marginBottom: 28
+            marginBottom: 28,
+            flexWrap: 'wrap'
           }}
         >
-          <div>
+          <div style={{ minWidth: 280, flex: '1 1 520px' }}>
             <div
               style={{
                 display: 'inline-flex',
@@ -60,9 +93,10 @@ function App(): React.JSX.Element {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <button
-              onClick={handleScanEnvironment}
+              onClick={scanEnvironment}
+              disabled={loading}
               style={{
                 border: 'none',
                 borderRadius: 12,
@@ -70,10 +104,11 @@ function App(): React.JSX.Element {
                 background: '#2563eb',
                 color: '#fff',
                 fontWeight: 700,
-                cursor: 'pointer'
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.72 : 1
               }}
             >
-              Escanear ambiente
+              {loading ? 'Escaneando...' : 'Escanear ambiente'}
             </button>
 
             <button
@@ -92,10 +127,26 @@ function App(): React.JSX.Element {
           </div>
         </header>
 
+        {error && (
+          <div
+            style={{
+              border: '1px solid rgba(251, 113, 133, 0.25)',
+              borderRadius: 14,
+              padding: '12px 14px',
+              background: 'rgba(251, 113, 133, 0.1)',
+              color: '#fecdd3',
+              fontSize: 13,
+              marginBottom: 18
+            }}
+          >
+            {error}
+          </div>
+        )}
+
         <section
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
             gap: 16,
             marginBottom: 28
           }}
@@ -109,11 +160,12 @@ function App(): React.JSX.Element {
         <section
           style={{
             display: 'grid',
-            gridTemplateColumns: '1.2fr 0.8fr',
-            gap: 18
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))',
+            gap: 18,
+            minWidth: 0
           }}
         >
-          <ToolList tools={mockTools} />
+          <ToolList tools={tools} hasScanResult={scanResult !== null} />
           <StepList />
         </section>
       </section>

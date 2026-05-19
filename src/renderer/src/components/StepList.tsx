@@ -34,7 +34,8 @@ function StepList(): React.JSX.Element {
         border: '1px solid rgba(148, 163, 184, 0.16)',
         borderRadius: 20,
         background: 'rgba(15, 23, 42, 0.72)',
-        padding: 20
+        padding: 20,
+        minWidth: 0
       }}
     >
       <h2 style={{ margin: 0, fontSize: 18 }}>Próximos passos</h2>

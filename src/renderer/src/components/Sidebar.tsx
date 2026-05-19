@@ -9,7 +9,8 @@ function Sidebar(): React.JSX.Element {
         padding: '24px 18px',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        minWidth: 220
       }}
     >
       <div>

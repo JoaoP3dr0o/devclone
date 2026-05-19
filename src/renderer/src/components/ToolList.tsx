@@ -4,16 +4,18 @@ import StatusBadge from './StatusBadge'
 
 type ToolListProps = {
   tools: DevTool[]
+  hasScanResult?: boolean
 }
 
-function ToolList({ tools }: ToolListProps): React.JSX.Element {
+function ToolList({ tools, hasScanResult = false }: ToolListProps): React.JSX.Element {
   return (
     <div
       style={{
         border: '1px solid rgba(148, 163, 184, 0.16)',
         borderRadius: 20,
         background: 'rgba(15, 23, 42, 0.72)',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        minWidth: 0
       }}
     >
       <div
@@ -28,25 +30,28 @@ function ToolList({ tools }: ToolListProps): React.JSX.Element {
         <div>
           <h2 style={{ margin: 0, fontSize: 18 }}>Ferramentas do MVP</h2>
           <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: 13 }}>
-            Catálogo inicial focado em Laravel + React.
+            {hasScanResult
+              ? 'Catálogo inicial com resultados do scan real.'
+              : 'Catálogo inicial focado em Laravel + React.'}
           </p>
         </div>
       </div>
 
-      <div>
+      <div style={{ overflowX: 'auto' }}>
         {tools.map((tool) => (
           <div
             key={tool.id}
             style={{
               display: 'grid',
-              gridTemplateColumns: '1fr auto',
+              gridTemplateColumns: 'minmax(220px, 1fr) auto',
               gap: 16,
               padding: '16px 20px',
-              borderBottom: '1px solid rgba(148, 163, 184, 0.1)'
+              borderBottom: '1px solid rgba(148, 163, 184, 0.1)',
+              minWidth: 520
             }}
           >
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <strong>{tool.name}</strong>
                 <span
                   style={{
@@ -66,7 +71,7 @@ function ToolList({ tools }: ToolListProps): React.JSX.Element {
               </p>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'nowrap' }}>
               {tool.version && (
                 <span style={{ color: '#94a3b8', fontSize: 13 }}>{tool.version}</span>
               )}

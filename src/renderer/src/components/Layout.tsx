@@ -10,7 +10,8 @@ function Layout({ children }: LayoutProps): React.JSX.Element {
   return (
     <main
       style={{
-        minHeight: '100vh',
+        height: '100vh',
+        overflow: 'hidden',
         background:
           'radial-gradient(circle at top left, rgba(37, 99, 235, 0.18), transparent 32%), #080d18',
         color: '#e5e7eb',
@@ -21,12 +22,27 @@ function Layout({ children }: LayoutProps): React.JSX.Element {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '260px 1fr',
-          minHeight: '100vh'
+          gridTemplateColumns: '220px minmax(0, 1fr)',
+          height: '100vh'
         }}
       >
         <Sidebar />
-        {children}
+
+        <div
+          style={{
+            overflowX: 'auto',
+            overflowY: 'auto'
+          }}
+        >
+          <div
+            style={{
+              minWidth: 980,
+              minHeight: '100%'
+            }}
+          >
+            {children}
+          </div>
+        </div>
       </div>
     </main>
   )
