@@ -12,6 +12,7 @@ export type ToolCatalogItem = {
     | 'docker'
     | 'mysql'
     | 'postgres'
+    | 'postman'
   name: string
   category: string
   description: string
@@ -121,5 +122,13 @@ export const toolsCatalog: ToolCatalogItem[] = [
     description: 'Banco de dados relacional usado em aplicações web modernas.',
     command: 'psql --version',
     versionRegex: '\\d+\\.\\d+'
+  },
+  {
+    id: 'postman',
+    name: 'Postman',
+    category: 'API Client',
+    description: 'Ferramenta para testar APIs durante o desenvolvimento.',
+    command: 'postman --version',
+    versionRegex: '\\d+\\.\\d+\\.\\d+'
   }
 ]

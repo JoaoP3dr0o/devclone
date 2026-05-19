@@ -1,4 +1,5 @@
 import Layout from './components/Layout'
+import RecommendationsPanel from './components/RecommendationsPanel'
 import StatCard from './components/StatCard'
 import StepList from './components/StepList'
 import ToolList from './components/ToolList'
@@ -6,6 +7,7 @@ import { mockTools } from './data/mockTools'
 import { useEnvironmentScan } from './hooks/useEnvironmentScan'
 import { calculateProfileCompatibility } from '../../shared/profiles/compatibility'
 import { activeDefaultProfile } from '../../shared/profiles/defaultProfiles'
+import { generateEnvironmentRecommendations } from '../../shared/recommendations/recommendation.engine'
 import type { EnvironmentScanResult } from '../../shared/scan.types'
 import type { DevTool, ToolStatus } from './types/tools'
 
@@ -53,6 +55,7 @@ function App(): React.JSX.Element {
     version: getToolScanVersion(tool, scanResult)
   }))
   const compatibility = calculateProfileCompatibility(scanResult, activeDefaultProfile)
+  const recommendations = generateEnvironmentRecommendations(scanResult, activeDefaultProfile)
 
   return (
     <Layout>
@@ -178,7 +181,10 @@ function App(): React.JSX.Element {
           }}
         >
           <ToolList tools={tools} hasScanResult={scanResult !== null} />
-          <StepList />
+          <div style={{ display: 'grid', gap: 18 }}>
+            <RecommendationsPanel recommendations={recommendations} />
+            <StepList />
+          </div>
         </section>
       </section>
     </Layout>

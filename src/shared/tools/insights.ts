@@ -106,6 +106,13 @@ export const toolInsights: Partial<Record<ToolCatalogItem['id'], ToolInsight>> =
     missingMessage: 'MySQL é comum em projetos Laravel e pode ser necessário fora do Docker.',
     documentationUrl: 'https://dev.mysql.com/doc'
   },
+  postman: {
+    healthyMessage: 'Postman está disponível para testar APIs e coleções locais.',
+    warningMessage: 'Postman está instalado, mas confira login, workspaces e coleções sincronizadas.',
+    outdatedMessage: 'Postman desatualizado pode ter diferenças na execução de coleções recentes.',
+    missingMessage: 'Postman é opcional, mas ajuda a validar APIs Laravel durante o desenvolvimento.',
+    documentationUrl: 'https://learning.postman.com/docs'
+  },
   postgres: {
     healthyMessage: 'PostgreSQL está disponível para bancos relacionais locais.',
     warningMessage: 'PostgreSQL está instalado, mas confira serviço, porta e usuário local.',
