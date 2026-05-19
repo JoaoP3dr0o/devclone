@@ -1,5 +1,6 @@
 import type { EnvironmentScanResult, ToolScanResult } from '../../shared/scan.types'
 import { toolsCatalog, type ToolCatalogItem } from '../../shared/tools/catalog'
+import { isVersionLowerThan } from '../../shared/utils/version'
 
 import { executeCommand } from './command.service'
 
@@ -10,10 +11,21 @@ function extractVersion(output: string | null, versionRegex: string): string | n
   return version?.[0] ?? null
 }
 
+function getToolStatus(tool: ToolCatalogItem, version: string | null): ToolScanResult['status'] {
+  if (!version) return 'missing'
+
+  if (tool.minimumVersion && isVersionLowerThan(version, tool.minimumVersion)) {
+    return tool.id === 'docker' ? 'warning' : 'outdated'
+  }
+
+  return 'healthy'
+}
+
 async function scanTool(tool: ToolCatalogItem): Promise<ToolScanResult> {
   const output = await executeCommand(tool.command)
   const version = extractVersion(output, tool.versionRegex)
   const installed = version !== null
+  const status = getToolStatus(tool, version)
 
   return {
     id: tool.id,
@@ -21,7 +33,7 @@ async function scanTool(tool: ToolCatalogItem): Promise<ToolScanResult> {
     installed,
     version,
     category: tool.category,
-    status: installed ? 'healthy' : 'missing'
+    status
   }
 }
 

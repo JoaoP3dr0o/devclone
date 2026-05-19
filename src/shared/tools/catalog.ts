@@ -17,6 +17,8 @@ export type ToolCatalogItem = {
   description: string
   command: string
   versionRegex: string
+  minimumVersion?: string
+  recommendedVersion?: string
 }
 
 export const toolsCatalog: ToolCatalogItem[] = [
@@ -34,7 +36,8 @@ export const toolsCatalog: ToolCatalogItem[] = [
     category: 'Runtime',
     description: 'Runtime JavaScript para React, Vite e ferramentas front-end.',
     command: 'node -v',
-    versionRegex: '\\d+\\.\\d+\\.\\d+'
+    versionRegex: '\\d+\\.\\d+\\.\\d+',
+    minimumVersion: '20.0.0'
   },
   {
     id: 'vscode',
@@ -74,7 +77,8 @@ export const toolsCatalog: ToolCatalogItem[] = [
     category: 'Runtime',
     description: 'Linguagem base para aplicações Laravel.',
     command: 'php -v',
-    versionRegex: '\\d+\\.\\d+\\.\\d+'
+    versionRegex: '\\d+\\.\\d+\\.\\d+',
+    minimumVersion: '8.2.0'
   },
   {
     id: 'composer',
@@ -98,7 +102,9 @@ export const toolsCatalog: ToolCatalogItem[] = [
     category: 'DevOps',
     description: 'Ambiente de containers para aplicações e bancos locais.',
     command: 'docker --version',
-    versionRegex: '\\d+\\.\\d+\\.\\d+'
+    versionRegex: '\\d+\\.\\d+\\.\\d+',
+    minimumVersion: '20.10.0',
+    recommendedVersion: '24.0.0'
   },
   {
     id: 'mysql',

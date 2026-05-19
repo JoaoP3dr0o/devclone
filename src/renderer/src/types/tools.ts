@@ -1,6 +1,6 @@
 import type { ToolCatalogItem } from '../../../shared/tools/catalog'
 
-export type ToolStatus = 'healthy' | 'missing' | 'pending'
+export type ToolStatus = 'healthy' | 'warning' | 'outdated' | 'missing' | 'pending'
 
 export type DevToolId = ToolCatalogItem['id']
 

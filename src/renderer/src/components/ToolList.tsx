@@ -7,6 +7,11 @@ type ToolListProps = {
   hasScanResult?: boolean
 }
 
+function getToolRowBackground(status: DevTool['status']): string {
+  if (status === 'warning' || status === 'outdated') return 'rgba(250, 204, 21, 0.035)'
+  return 'transparent'
+}
+
 function ToolList({ tools, hasScanResult = false }: ToolListProps): React.JSX.Element {
   return (
     <div
@@ -47,7 +52,8 @@ function ToolList({ tools, hasScanResult = false }: ToolListProps): React.JSX.El
               gap: 16,
               padding: '16px 20px',
               borderBottom: '1px solid rgba(148, 163, 184, 0.1)',
-              minWidth: 520
+              minWidth: 520,
+              background: getToolRowBackground(tool.status)
             }}
           >
             <div style={{ minWidth: 0 }}>

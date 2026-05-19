@@ -50,7 +50,9 @@ function App(): React.JSX.Element {
     status: getToolScanStatus(tool, scanResult, loading),
     version: getToolScanVersion(tool, scanResult)
   }))
-  const installedTools = tools.filter((tool) => tool.status === 'healthy').length
+  const installedTools = tools.filter((tool) =>
+    ['healthy', 'warning', 'outdated'].includes(tool.status)
+  ).length
   const missingTools = tools.filter((tool) => tool.status === 'missing').length
   const totalTools = mockTools.length
 
