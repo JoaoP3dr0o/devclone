@@ -1,6 +1,6 @@
 import type { ToolCatalogItem } from './tools/catalog'
 
-export type ToolScanStatus = 'healthy' | 'warning' | 'outdated' | 'missing'
+export type ToolScanStatus = 'healthy' | 'warning' | 'outdated' | 'missing' | 'unsupported'
 
 export type ToolScanResult = {
   id: ToolCatalogItem['id']

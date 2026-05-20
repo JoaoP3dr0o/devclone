@@ -1,6 +1,7 @@
 import type { ToolCatalogItem } from '@shared/tools/catalog'
+import type { ToolScanStatus } from '@shared/scan.types'
 
-export type ToolStatus = 'healthy' | 'warning' | 'outdated' | 'missing' | 'pending'
+export type ToolStatus = ToolScanStatus | 'pending'
 
 export type DevToolId = ToolCatalogItem['id']
 

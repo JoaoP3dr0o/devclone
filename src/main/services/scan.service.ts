@@ -1,8 +1,10 @@
 import type { EnvironmentScanResult, ToolScanResult } from '../../shared/scan.types'
+import type { PlatformId } from '../../shared/platform/platform.types'
 import { toolsCatalog, type ToolCatalogItem } from '../../shared/tools/catalog'
 import { isVersionLowerThan } from '../../shared/utils/version'
 
 import { executeCommand } from './command.service'
+import { getCurrentPlatform } from './platform.service'
 
 function extractVersion(output: string | null, versionRegex: string): string | null {
   if (!output) return null
@@ -21,7 +23,26 @@ function getToolStatus(tool: ToolCatalogItem, version: string | null): ToolScanR
   return 'healthy'
 }
 
-async function scanTool(tool: ToolCatalogItem): Promise<ToolScanResult> {
+function createUnsupportedToolResult(tool: ToolCatalogItem): ToolScanResult {
+  return {
+    id: tool.id,
+    name: tool.name,
+    installed: false,
+    version: null,
+    category: tool.category,
+    status: 'unsupported'
+  }
+}
+
+function isToolSupportedOnPlatform(tool: ToolCatalogItem, platformId: PlatformId): boolean {
+  return tool.supportedPlatforms.includes(platformId)
+}
+
+async function scanTool(tool: ToolCatalogItem, platformId: PlatformId): Promise<ToolScanResult> {
+  if (!isToolSupportedOnPlatform(tool, platformId)) {
+    return createUnsupportedToolResult(tool)
+  }
+
   const output = await executeCommand(tool.command)
   const version = extractVersion(output, tool.versionRegex)
   const installed = version !== null
@@ -38,7 +59,10 @@ async function scanTool(tool: ToolCatalogItem): Promise<ToolScanResult> {
 }
 
 export async function scanEnvironment(): Promise<EnvironmentScanResult> {
-  const tools = await Promise.all(toolsCatalog.map((tool) => scanTool(tool)))
+  const currentPlatform = getCurrentPlatform()
+  const tools = await Promise.all(
+    toolsCatalog.map((tool) => scanTool(tool, currentPlatform.id))
+  )
 
   return {
     tools
