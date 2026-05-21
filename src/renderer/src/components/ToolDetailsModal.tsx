@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+
 import { getToolInsight, getToolInsightMessage } from '@shared/tools/insights'
 import type { DevTool } from '../types/tools'
 
@@ -14,9 +16,38 @@ function getStatusInsight(tool: DevTool): string {
 }
 
 function ToolDetailsModal({ tool, onClose }: ToolDetailsModalProps): React.JSX.Element | null {
+  const [installCommand, setInstallCommand] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!tool) {
+      setInstallCommand(null)
+      return
+    }
+
+    let cancelled = false
+
+    window.electron
+      .getInstallCommand(tool.id)
+      .then((command) => {
+        if (!cancelled) {
+          setInstallCommand(command)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setInstallCommand(null)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [tool?.id])
+
   if (!tool) return null
 
   const insight = getToolInsight(tool.id)
+  const installCommandPreview = installCommand ?? 'Installation not available'
 
   return (
     <div
@@ -93,6 +124,8 @@ function ToolDetailsModal({ tool, onClose }: ToolDetailsModalProps): React.JSX.E
             <InfoBlock label="Versão atual" value={tool.version ?? 'Não detectada'} />
             <InfoBlock label="Versão mínima" value={tool.minimumVersion ?? 'Não definida'} />
           </div>
+
+          <InfoBlock label="Install command" value={installCommandPreview} />
 
           <div
             style={{
