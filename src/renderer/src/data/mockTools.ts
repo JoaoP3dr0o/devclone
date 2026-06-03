@@ -1,4 +1,4 @@
-import { toolsCatalog } from '../../../shared/tools/catalog'
+import { toolsCatalog } from '@shared/tools/catalog'
 import type { DevTool } from '../types/tools'
 
 const initialInstalledVersions: Partial<Record<DevTool['id'], string>> = {

@@ -7,23 +7,23 @@ type Step = {
 const steps: Step[] = [
   {
     number: '1',
-    title: 'Organizar componentes',
-    text: 'Separar Layout, Sidebar, StatCard e ToolCard.'
+    title: 'Roteador de navegação',
+    text: 'Integrar react-router-dom para habilitar as telas da sidebar.'
   },
   {
     number: '2',
-    title: 'Criar catálogo real',
-    text: 'Mover ferramentas para src/shared/tools/catalog.ts.'
+    title: 'Instalação guiada',
+    text: 'Preview do comando antes de executar com feedback de progresso em tempo real.'
   },
   {
     number: '3',
-    title: 'Implementar scan',
-    text: 'Detectar Git, Node e VS Code via comandos reais.'
+    title: 'Estado global',
+    text: 'Migrar scan e plataforma para Context ou Zustand — remover prop drilling.'
   },
   {
     number: '4',
-    title: 'Gerar perfil JSON',
-    text: 'Salvar ferramentas e versões detectadas localmente.'
+    title: 'Cloud sync',
+    text: 'Login e sincronização de perfis entre máquinas via API remota.'
   }
 ]
 

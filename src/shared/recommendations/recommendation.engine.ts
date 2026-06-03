@@ -10,26 +10,14 @@ const missingSeverityByToolId: Partial<Record<ToolScanResult['id'], Recommendati
   node: 'high',
   docker: 'medium',
   mysql: 'medium',
+  postgres: 'medium',
   postman: 'low',
-  pnpm: 'low'
-}
-
-const toolDisplayNameById: Partial<Record<ToolScanResult['id'], string>> = {
-  php: 'PHP',
-  composer: 'Composer',
-  node: 'Node.js',
-  docker: 'Docker',
-  mysql: 'MySQL',
-  postman: 'Postman',
-  pnpm: 'pnpm'
+  pnpm: 'low',
+  bun: 'low'
 }
 
 function getProfileToolIds(profile: EnvironmentProfile): Set<ToolScanResult['id']> {
   return new Set(profile.tools.map((tool) => tool.toolId))
-}
-
-function getToolDisplayName(tool: ToolScanResult): string {
-  return toolDisplayNameById[tool.id] ?? tool.name
 }
 
 function createMissingRecommendation(tool: ToolScanResult): EnvironmentRecommendation | null {
@@ -39,7 +27,7 @@ function createMissingRecommendation(tool: ToolScanResult): EnvironmentRecommend
 
   return {
     severity,
-    title: `${getToolDisplayName(tool)} ausente`,
+    title: `${tool.name} ausente`,
     message: getToolInsightMessage(tool.id, 'missing'),
     toolId: tool.id
   }
@@ -50,7 +38,7 @@ function createOutdatedRecommendation(tool: ToolScanResult): EnvironmentRecommen
 
   return {
     severity: 'high',
-    title: `${getToolDisplayName(tool)} desatualizado`,
+    title: `${tool.name} desatualizado`,
     message: getToolInsightMessage(tool.id, 'outdated'),
     toolId: tool.id
   }

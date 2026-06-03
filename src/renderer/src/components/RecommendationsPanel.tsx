@@ -1,4 +1,4 @@
-import type { EnvironmentRecommendation } from '../../../shared/recommendations/recommendation.types'
+import type { EnvironmentRecommendation } from '@shared/recommendations/recommendation.types'
 
 type RecommendationsPanelProps = {
   recommendations: EnvironmentRecommendation[]
