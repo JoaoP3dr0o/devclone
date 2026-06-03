@@ -6,6 +6,19 @@ import { isVersionLowerThan } from '../../shared/utils/version'
 import { executeCommand } from './command.service'
 import { getCurrentPlatform } from './platform.service'
 
+// On Windows, Electron inherits PATH from the moment it started. Tools installed
+// while the app is running won't be found until we refresh from the registry.
+async function refreshWindowsPath(): Promise<void> {
+  if (process.platform !== 'win32') return
+
+  const freshPath = await executeCommand(
+    "powershell -NoProfile -Command \"[System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')\""
+  )
+  if (freshPath) {
+    process.env['PATH'] = freshPath
+  }
+}
+
 function extractVersion(output: string | null, versionRegex: string): string | null {
   if (!output) return null
 
@@ -59,6 +72,7 @@ async function scanTool(tool: ToolCatalogItem, platformId: PlatformId): Promise<
 }
 
 export async function scanEnvironment(): Promise<EnvironmentScanResult> {
+  await refreshWindowsPath()
   const currentPlatform = getCurrentPlatform()
   const tools = await Promise.all(
     toolsCatalog.map((tool) => scanTool(tool, currentPlatform.id))
