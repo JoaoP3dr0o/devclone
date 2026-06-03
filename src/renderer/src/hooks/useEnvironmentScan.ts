@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import type { EnvironmentScanResult } from '../../../shared/scan.types'
+import type { EnvironmentScanResult } from '@shared/scan.types'
 
 type UseEnvironmentScanResult = {
   loading: boolean
@@ -50,9 +50,9 @@ export function useEnvironmentScan(): UseEnvironmentScanResult {
     setError(null)
 
     try {
-      const result = await window.electron.scanEnvironment()
-      setScanResult(result)
-      setLastScanAt(new Date().toISOString())
+      const saved = await window.electron.scanEnvironment()
+      setScanResult(saved.tools)
+      setLastScanAt(saved.lastScanAt)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError))
     } finally {

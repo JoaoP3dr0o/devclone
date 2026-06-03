@@ -27,6 +27,7 @@ export type ToolCatalogItem = {
   installMethods?: InstallMethods
   minimumVersion?: string
   recommendedVersion?: string
+  outdatedStatus?: 'warning' | 'outdated'
 }
 
 export const toolsCatalog: ToolCatalogItem[] = [
@@ -167,6 +168,7 @@ export const toolsCatalog: ToolCatalogItem[] = [
     versionRegex: '\\d+\\.\\d+\\.\\d+',
     minimumVersion: '20.10.0',
     recommendedVersion: '24.0.0',
+    outdatedStatus: 'warning',
     supportedPlatforms: ALL_PLATFORMS,
     installMethods: {
       windows: 'winget install Docker.DockerDesktop',
@@ -194,7 +196,7 @@ export const toolsCatalog: ToolCatalogItem[] = [
     category: 'Database',
     description: 'Banco de dados relacional usado em aplicações web modernas.',
     command: 'psql --version',
-    versionRegex: '\\d+\\.\\d+',
+    versionRegex: '\\d+\\.\\d+\\.\\d+',
     supportedPlatforms: ALL_PLATFORMS,
     installMethods: {
       windows: 'winget install --id PostgreSQL.PostgreSQL.17 -e',

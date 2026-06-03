@@ -6,9 +6,7 @@ import { loadLastScan, saveLastScan } from '../services/storage.service'
 export function registerScanIpc(): void {
   ipcMain.handle('scan:environment', async () => {
     const result = await scanEnvironment()
-    await saveLastScan(result)
-
-    return result
+    return saveLastScan(result)
   })
   ipcMain.handle('load:lastScan', () => loadLastScan())
 }

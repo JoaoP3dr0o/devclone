@@ -17,7 +17,7 @@ function getToolStatus(tool: ToolCatalogItem, version: string | null): ToolScanR
   if (!version) return 'missing'
 
   if (tool.minimumVersion && isVersionLowerThan(version, tool.minimumVersion)) {
-    return tool.id === 'docker' ? 'warning' : 'outdated'
+    return tool.outdatedStatus ?? 'outdated'
   }
 
   return 'healthy'
