@@ -8,7 +8,14 @@ const electron = {
   scanEnvironment: () => ipcRenderer.invoke('scan:environment'),
   loadLastScan: () => ipcRenderer.invoke('load:lastScan'),
   getInstallCommand: (toolId: string) => ipcRenderer.invoke('install:get-command', toolId),
-  getPlatform: () => ipcRenderer.invoke('platform:get')
+  getPlatform: () => ipcRenderer.invoke('platform:get'),
+  runInstallCommand: (toolId: string) => ipcRenderer.invoke('install:run-command', toolId),
+  onInstallOutput: (callback: (chunk: { type: 'stdout' | 'stderr'; text: string }) => void) => {
+    ipcRenderer.on('install:output', (_event, chunk) => callback(chunk))
+  },
+  removeInstallListeners: () => ipcRenderer.removeAllListeners('install:output'),
+  getUserProfile: () => ipcRenderer.invoke('profile:get'),
+  saveUserProfile: (profile: unknown) => ipcRenderer.invoke('profile:save', profile)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

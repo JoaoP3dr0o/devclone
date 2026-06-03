@@ -12,3 +12,14 @@ export type EnvironmentProfile = {
   description: string
   tools: EnvironmentProfileTool[]
 }
+
+export type UserProfile = {
+  id: 'active-profile'
+  name: string
+  toolIds: ToolCatalogItem['id'][]
+}
+
+export type SavedUserProfile = {
+  version: 1
+  profile: UserProfile
+}

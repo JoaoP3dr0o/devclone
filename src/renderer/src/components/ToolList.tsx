@@ -8,6 +8,7 @@ import ToolDetailsModal from './ToolDetailsModal'
 type ToolListProps = {
   tools: DevTool[]
   hasScanResult?: boolean
+  onToolInstalled?: () => void
 }
 
 function getToolRowBackground(status: DevTool['status']): string {
@@ -15,7 +16,7 @@ function getToolRowBackground(status: DevTool['status']): string {
   return 'transparent'
 }
 
-function ToolList({ tools, hasScanResult = false }: ToolListProps): React.JSX.Element {
+function ToolList({ tools, hasScanResult = false, onToolInstalled }: ToolListProps): React.JSX.Element {
   const [selectedTool, setSelectedTool] = useState<DevTool | null>(null)
 
   return (
@@ -101,7 +102,11 @@ function ToolList({ tools, hasScanResult = false }: ToolListProps): React.JSX.El
         </div>
       </div>
 
-      <ToolDetailsModal tool={selectedTool} onClose={() => setSelectedTool(null)} />
+      <ToolDetailsModal
+        tool={selectedTool}
+        onClose={() => setSelectedTool(null)}
+        onInstallSuccess={onToolInstalled}
+      />
     </>
   )
 }

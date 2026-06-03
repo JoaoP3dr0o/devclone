@@ -1,13 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { getToolInsight, getToolInsightMessage } from '@shared/tools/insights'
 import type { DevTool } from '../types/tools'
 
 import StatusBadge from './StatusBadge'
 
+type InstallPhase = 'idle' | 'confirm' | 'running' | 'done'
+type InstallResult = { success: boolean; exitCode?: number; error?: string }
+
 type ToolDetailsModalProps = {
   tool: DevTool | null
   onClose: () => void
+  onInstallSuccess?: () => void
 }
 
 function getStatusInsight(tool: DevTool): string {
@@ -15,8 +19,16 @@ function getStatusInsight(tool: DevTool): string {
   return getToolInsightMessage(tool.id, tool.status)
 }
 
-function ToolDetailsModal({ tool, onClose }: ToolDetailsModalProps): React.JSX.Element | null {
+function ToolDetailsModal({
+  tool,
+  onClose,
+  onInstallSuccess
+}: ToolDetailsModalProps): React.JSX.Element | null {
   const [installCommand, setInstallCommand] = useState<string | null>(null)
+  const [installPhase, setInstallPhase] = useState<InstallPhase>('idle')
+  const [outputLog, setOutputLog] = useState<string[]>([])
+  const [installResult, setInstallResult] = useState<InstallResult | null>(null)
+  const logEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!tool) {
@@ -29,14 +41,10 @@ function ToolDetailsModal({ tool, onClose }: ToolDetailsModalProps): React.JSX.E
     window.electron
       .getInstallCommand(tool.id)
       .then((command) => {
-        if (!cancelled) {
-          setInstallCommand(command)
-        }
+        if (!cancelled) setInstallCommand(command)
       })
       .catch(() => {
-        if (!cancelled) {
-          setInstallCommand(null)
-        }
+        if (!cancelled) setInstallCommand(null)
       })
 
     return () => {
@@ -44,10 +52,55 @@ function ToolDetailsModal({ tool, onClose }: ToolDetailsModalProps): React.JSX.E
     }
   }, [tool?.id])
 
+  useEffect(() => {
+    setInstallPhase('idle')
+    setOutputLog([])
+    setInstallResult(null)
+  }, [tool?.id])
+
+  useEffect(() => {
+    return () => {
+      window.electron.removeInstallListeners()
+    }
+  }, [])
+
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [outputLog])
+
   if (!tool) return null
 
   const insight = getToolInsight(tool.id)
-  const installCommandPreview = installCommand ?? 'Installation not available'
+  const installCommandPreview = installCommand ?? 'Indisponível para esta plataforma'
+
+  async function handleRunInstall(): Promise<void> {
+    if (!tool || !installCommand) return
+
+    setInstallPhase('running')
+    setOutputLog([])
+    setInstallResult(null)
+
+    window.electron.onInstallOutput((chunk) => {
+      setOutputLog((prev) => [...prev, chunk.text])
+    })
+
+    try {
+      const result = await window.electron.runInstallCommand(tool.id)
+      setInstallResult(result)
+    } catch (err) {
+      setInstallResult({ success: false, error: String(err) })
+    } finally {
+      setInstallPhase('done')
+      window.electron.removeInstallListeners()
+    }
+  }
+
+  function handleRescanAndClose(): void {
+    onInstallSuccess?.()
+    onClose()
+  }
+
+  const isRunningOrDone = installPhase === 'running' || installPhase === 'done'
 
   return (
     <div
@@ -76,9 +129,13 @@ function ToolDetailsModal({ tool, onClose }: ToolDetailsModalProps): React.JSX.E
           background: 'rgba(15, 23, 42, 0.98)',
           boxShadow: '0 24px 70px rgba(0, 0, 0, 0.42)',
           color: '#e5e7eb',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          maxHeight: 'calc(100vh - 48px)',
+          display: 'flex',
+          flexDirection: 'column'
         }}
       >
+        {/* Header */}
         <div
           style={{
             padding: '20px 22px',
@@ -86,7 +143,8 @@ function ToolDetailsModal({ tool, onClose }: ToolDetailsModalProps): React.JSX.E
             display: 'flex',
             justifyContent: 'space-between',
             gap: 16,
-            alignItems: 'flex-start'
+            alignItems: 'flex-start',
+            flexShrink: 0
           }}
         >
           <div>
@@ -106,64 +164,299 @@ function ToolDetailsModal({ tool, onClose }: ToolDetailsModalProps): React.JSX.E
               color: '#e5e7eb',
               cursor: 'pointer',
               fontWeight: 700,
-              padding: '8px 10px'
+              padding: '8px 10px',
+              flexShrink: 0
             }}
           >
             Fechar
           </button>
         </div>
 
-        <div style={{ padding: 22, display: 'grid', gap: 18 }}>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: 12
-            }}
-          >
-            <InfoBlock label="Versão atual" value={tool.version ?? 'Não detectada'} />
-            <InfoBlock label="Versão mínima" value={tool.minimumVersion ?? 'Não definida'} />
-          </div>
+        {/* Body */}
+        <div style={{ padding: 22, display: 'grid', gap: 18, overflowY: 'auto' }}>
+          {!isRunningOrDone && (
+            <>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                  gap: 12
+                }}
+              >
+                <InfoBlock label="Versão atual" value={tool.version ?? 'Não detectada'} />
+                <InfoBlock label="Versão mínima" value={tool.minimumVersion ?? 'Não definida'} />
+              </div>
 
-          <InfoBlock label="Install command" value={installCommandPreview} />
+              <InfoBlock label="Install command" value={installCommandPreview} />
 
-          <div
-            style={{
-              border: '1px solid rgba(147, 197, 253, 0.16)',
-              borderRadius: 16,
-              padding: 16,
-              background: 'rgba(37, 99, 235, 0.1)'
-            }}
-          >
-            <div style={{ color: '#93c5fd', fontSize: 12, fontWeight: 800, marginBottom: 8 }}>
-              INSIGHT
-            </div>
-            <p style={{ margin: 0, color: '#dbeafe', lineHeight: 1.6, fontSize: 14 }}>
-              {getStatusInsight(tool)}
-            </p>
-          </div>
+              <div
+                style={{
+                  border: '1px solid rgba(147, 197, 253, 0.16)',
+                  borderRadius: 16,
+                  padding: 16,
+                  background: 'rgba(37, 99, 235, 0.1)'
+                }}
+              >
+                <div style={{ color: '#93c5fd', fontSize: 12, fontWeight: 800, marginBottom: 8 }}>
+                  INSIGHT
+                </div>
+                <p style={{ margin: 0, color: '#dbeafe', lineHeight: 1.6, fontSize: 14 }}>
+                  {getStatusInsight(tool)}
+                </p>
+              </div>
 
-          <div>
-            <div style={{ color: '#94a3b8', fontSize: 12, fontWeight: 800, marginBottom: 8 }}>
-              DESCRIÇÃO
-            </div>
-            <p style={{ margin: 0, color: '#cbd5e1', lineHeight: 1.7, fontSize: 14 }}>
-              {insight.longDescription ?? tool.description}
-            </p>
-          </div>
+              <div>
+                <div style={{ color: '#94a3b8', fontSize: 12, fontWeight: 800, marginBottom: 8 }}>
+                  DESCRIÇÃO
+                </div>
+                <p style={{ margin: 0, color: '#cbd5e1', lineHeight: 1.7, fontSize: 14 }}>
+                  {insight.longDescription ?? tool.description}
+                </p>
+              </div>
 
-          {insight.documentationUrl && (
-            <a
-              href={insight.documentationUrl}
-              target="_blank"
-              rel="noreferrer"
-              style={{ color: '#93c5fd', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}
-            >
-              Documentação
-            </a>
+              {insight.documentationUrl && (
+                <a
+                  href={insight.documentationUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: '#93c5fd', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}
+                >
+                  Documentação
+                </a>
+              )}
+            </>
+          )}
+
+          {/* Install section */}
+          {tool.status === 'missing' && (
+            <InstallSection
+              phase={installPhase}
+              command={installCommand}
+              outputLog={outputLog}
+              result={installResult}
+              logEndRef={logEndRef}
+              onRequestInstall={() => setInstallPhase('confirm')}
+              onConfirm={handleRunInstall}
+              onCancel={() => setInstallPhase('idle')}
+              onRescan={handleRescanAndClose}
+            />
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+type InstallSectionProps = {
+  phase: InstallPhase
+  command: string | null
+  outputLog: string[]
+  result: InstallResult | null
+  logEndRef: React.RefObject<HTMLDivElement | null>
+  onRequestInstall: () => void
+  onConfirm: () => void
+  onCancel: () => void
+  onRescan: () => void
+}
+
+function InstallSection({
+  phase,
+  command,
+  outputLog,
+  result,
+  logEndRef,
+  onRequestInstall,
+  onConfirm,
+  onCancel,
+  onRescan
+}: InstallSectionProps): React.JSX.Element {
+  if (phase === 'idle') {
+    return (
+      <div style={{ borderTop: '1px solid rgba(148, 163, 184, 0.14)', paddingTop: 16 }}>
+        <button
+          onClick={onRequestInstall}
+          disabled={!command}
+          style={{
+            border: 'none',
+            borderRadius: 10,
+            padding: '10px 18px',
+            background: command ? '#2563eb' : 'rgba(148, 163, 184, 0.2)',
+            color: command ? '#fff' : '#64748b',
+            fontWeight: 700,
+            cursor: command ? 'pointer' : 'not-allowed',
+            fontSize: 14
+          }}
+        >
+          Instalar
+        </button>
+      </div>
+    )
+  }
+
+  if (phase === 'confirm') {
+    return (
+      <div
+        style={{
+          borderTop: '1px solid rgba(148, 163, 184, 0.14)',
+          paddingTop: 16,
+          display: 'grid',
+          gap: 14
+        }}
+      >
+        <div style={{ color: '#94a3b8', fontSize: 13 }}>
+          O seguinte comando será executado no seu terminal:
+        </div>
+        <pre
+          style={{
+            margin: 0,
+            padding: '10px 14px',
+            borderRadius: 10,
+            background: 'rgba(2, 6, 23, 0.6)',
+            border: '1px solid rgba(148, 163, 184, 0.16)',
+            color: '#a5f3fc',
+            fontSize: 13,
+            fontFamily: 'monospace',
+            overflowX: 'auto',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all'
+          }}
+        >
+          {command}
+        </pre>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={onConfirm}
+            style={{
+              border: 'none',
+              borderRadius: 10,
+              padding: '10px 18px',
+              background: '#2563eb',
+              color: '#fff',
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontSize: 14
+            }}
+          >
+            Executar
+          </button>
+          <button
+            onClick={onCancel}
+            style={{
+              border: '1px solid rgba(148, 163, 184, 0.22)',
+              borderRadius: 10,
+              padding: '10px 18px',
+              background: 'transparent',
+              color: '#94a3b8',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontSize: 14
+            }}
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const logText = outputLog.join('')
+  const isDone = phase === 'done'
+
+  return (
+    <div style={{ display: 'grid', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {!isDone && (
+          <span
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              background: '#3b82f6',
+              display: 'inline-block',
+              animation: 'pulse 1.2s infinite'
+            }}
+          />
+        )}
+        <span style={{ fontWeight: 700, fontSize: 14 }}>
+          {isDone
+            ? result?.success
+              ? 'Instalação concluída'
+              : 'Falha na instalação'
+            : 'Instalando...'}
+        </span>
+        {isDone && (
+          <span
+            style={{
+              fontSize: 12,
+              padding: '2px 8px',
+              borderRadius: 6,
+              fontWeight: 700,
+              background: result?.success
+                ? 'rgba(34, 197, 94, 0.15)'
+                : 'rgba(251, 113, 133, 0.15)',
+              color: result?.success ? '#4ade80' : '#fda4af'
+            }}
+          >
+            {result?.success ? 'OK' : `exit ${result?.exitCode ?? 1}`}
+          </span>
+        )}
+      </div>
+
+      <pre
+        style={{
+          margin: 0,
+          padding: '12px 14px',
+          borderRadius: 12,
+          background: 'rgba(2, 6, 23, 0.7)',
+          border: '1px solid rgba(148, 163, 184, 0.14)',
+          color: '#cbd5e1',
+          fontSize: 12,
+          fontFamily: 'monospace',
+          overflowY: 'auto',
+          maxHeight: 240,
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-all'
+        }}
+      >
+        {logText || (isDone ? '(sem output)' : 'Aguardando output...')}
+        <div ref={logEndRef} />
+      </pre>
+
+      {isDone && (
+        <div style={{ display: 'flex', gap: 10 }}>
+          {result?.success && (
+            <button
+              onClick={onRescan}
+              style={{
+                border: 'none',
+                borderRadius: 10,
+                padding: '10px 18px',
+                background: '#2563eb',
+                color: '#fff',
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontSize: 14
+              }}
+            >
+              Re-escanear e fechar
+            </button>
+          )}
+          {!result?.success && result?.error && (
+            <div
+              style={{
+                fontSize: 12,
+                color: '#fda4af',
+                padding: '8px 12px',
+                borderRadius: 8,
+                background: 'rgba(251, 113, 133, 0.1)',
+                border: '1px solid rgba(251, 113, 133, 0.2)'
+              }}
+            >
+              {result.error}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

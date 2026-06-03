@@ -5,9 +5,9 @@ import StatCard from '../components/StatCard'
 import StepList from '../components/StepList'
 import ToolList from '../components/ToolList'
 import { mockTools } from '../data/mockTools'
+import { useActiveProfile } from '../hooks/useActiveProfile'
 import { useEnvironmentScan } from '../hooks/useEnvironmentScan'
 import { calculateProfileCompatibility } from '@shared/profiles/compatibility'
-import { activeDefaultProfile } from '@shared/profiles/defaultProfiles'
 import { generateEnvironmentRecommendations } from '@shared/recommendations/recommendation.engine'
 import type { EnvironmentScanResult } from '@shared/scan.types'
 import type { DevTool, ToolStatus } from '../types/tools'
@@ -51,6 +51,7 @@ function getToolScanVersion(
 function Home(): React.JSX.Element {
   const [platformName, setPlatformName] = useState<string>('Detectando...')
   const { loading, error, scanResult, lastScanAt, scanEnvironment } = useEnvironmentScan()
+  const { environmentProfile } = useActiveProfile()
 
   useEffect(() => {
     window.electron
@@ -64,8 +65,8 @@ function Home(): React.JSX.Element {
     status: getToolScanStatus(tool, scanResult, loading),
     version: getToolScanVersion(tool, scanResult)
   }))
-  const compatibility = calculateProfileCompatibility(scanResult, activeDefaultProfile)
-  const recommendations = generateEnvironmentRecommendations(scanResult, activeDefaultProfile)
+  const compatibility = calculateProfileCompatibility(scanResult, environmentProfile)
+  const recommendations = generateEnvironmentRecommendations(scanResult, environmentProfile)
 
   return (
     <section style={{ padding: 32, minWidth: 0 }}>
@@ -174,7 +175,7 @@ function Home(): React.JSX.Element {
           marginBottom: 28
         }}
       >
-        <StatCard label="Profile ativo" value={activeDefaultProfile.name} />
+        <StatCard label="Profile ativo" value={environmentProfile.name} />
         <StatCard label="Compatibilidade" value={`${compatibility.score}%`} />
         <StatCard label="OK" value={compatibility.healthy.length.toString()} />
         <StatCard label="Ausentes" value={compatibility.missing.length.toString()} />
@@ -189,7 +190,11 @@ function Home(): React.JSX.Element {
           minWidth: 0
         }}
       >
-        <ToolList tools={tools} hasScanResult={scanResult !== null} />
+        <ToolList
+          tools={tools}
+          hasScanResult={scanResult !== null}
+          onToolInstalled={scanEnvironment}
+        />
         <div style={{ display: 'grid', gap: 18 }}>
           <RecommendationsPanel recommendations={recommendations} />
           <StepList />

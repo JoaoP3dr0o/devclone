@@ -33,6 +33,19 @@ function isProfileToolOutdated(
   return isVersionLowerThan(scanTool.version, profileTool.minimumVersion)
 }
 
+export function detectBestProfile(
+  scanResult: EnvironmentScanResult,
+  profiles: EnvironmentProfile[]
+): EnvironmentProfile | null {
+  if (!profiles.length) return null
+
+  return profiles.reduce((best, current) => {
+    const bestScore = calculateProfileCompatibility(scanResult, best).score
+    const currentScore = calculateProfileCompatibility(scanResult, current).score
+    return currentScore > bestScore ? current : best
+  })
+}
+
 export function calculateProfileCompatibility(
   scanResult: EnvironmentScanResult | null,
   profile: EnvironmentProfile
