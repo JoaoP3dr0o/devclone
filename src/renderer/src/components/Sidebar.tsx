@@ -1,4 +1,12 @@
-const menuItems = ['Home', 'Tools', 'Scan', 'Profile', 'Settings']
+import { NavLink } from 'react-router-dom'
+
+const menuItems = [
+  { label: 'Home', path: '/', end: true },
+  { label: 'Tools', path: '/tools', end: false },
+  { label: 'Scan', path: '/scan', end: false },
+  { label: 'Profile', path: '/profile', end: false },
+  { label: 'Settings', path: '/settings', end: false }
+]
 
 function Sidebar(): React.JSX.Element {
   return (
@@ -37,22 +45,28 @@ function Sidebar(): React.JSX.Element {
         </div>
 
         <nav style={{ display: 'grid', gap: 10 }}>
-          {menuItems.map((item, index) => (
-            <button
-              key={item}
-              style={{
+          {menuItems.map((item) => (
+            <NavLink
+              key={item.label}
+              to={item.path}
+              end={item.end}
+              style={({ isActive }) => ({
+                display: 'block',
                 textAlign: 'left',
                 border: 'none',
                 borderRadius: 12,
                 padding: '12px 14px',
-                color: index === 0 ? '#ffffff' : '#94a3b8',
-                background: index === 0 ? 'rgba(37, 99, 235, 0.95)' : 'transparent',
+                color: isActive ? '#ffffff' : '#94a3b8',
+                background: isActive ? 'rgba(37, 99, 235, 0.95)' : 'transparent',
                 cursor: 'pointer',
-                fontWeight: 600
-              }}
+                fontWeight: 600,
+                textDecoration: 'none',
+                fontFamily: 'inherit',
+                fontSize: 'inherit'
+              })}
             >
-              {item}
-            </button>
+              {item.label}
+            </NavLink>
           ))}
         </nav>
       </div>
@@ -66,9 +80,9 @@ function Sidebar(): React.JSX.Element {
         }}
       >
         <div style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>STATUS DO MVP</div>
-        <div style={{ fontWeight: 700 }}>Visual base</div>
+        <div style={{ fontWeight: 700 }}>Roteador ativo</div>
         <div style={{ color: '#94a3b8', fontSize: 13, marginTop: 4 }}>
-          Próximo passo: scan real do ambiente.
+          Próximo passo: instalação guiada.
         </div>
       </div>
     </aside>

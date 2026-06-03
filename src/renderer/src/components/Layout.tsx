@@ -28,20 +28,8 @@ function Layout({ children }: LayoutProps): React.JSX.Element {
       >
         <Sidebar />
 
-        <div
-          style={{
-            overflowX: 'auto',
-            overflowY: 'auto'
-          }}
-        >
-          <div
-            style={{
-              minWidth: 980,
-              minHeight: '100%'
-            }}
-          >
-            {children}
-          </div>
+        <div style={{ overflowY: 'auto', minWidth: 0 }}>
+          {children}
         </div>
       </div>
     </main>
