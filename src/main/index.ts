@@ -3,6 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerInstallIpc } from './ipc/install.ipc'
+import { registerPlatformIpc } from './ipc/platform.ipc'
 import { registerScanIpc } from './ipc/scan.ipc'
 
 function createWindow(): void {
@@ -57,6 +58,7 @@ app.whenReady().then(() => {
   ipcMain.on('ping', () => console.log('pong'))
   registerScanIpc()
   registerInstallIpc()
+  registerPlatformIpc()
 
   createWindow()
 

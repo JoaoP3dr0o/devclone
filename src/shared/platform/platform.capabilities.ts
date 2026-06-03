@@ -22,20 +22,3 @@ export type PlatformCapabilities = {
   macos: MacOSCapabilities
 }
 
-export const PLATFORM_CAPABILITIES: PlatformCapabilities = {
-  windows: {
-    supportsWinget: true,
-    supportsDockerDesktop: true,
-    supportsWSL: true,
-    supportsPowerShell: true
-  },
-  linux: {
-    supportsApt: true,
-    supportsSnap: true,
-    supportsSystemd: true
-  },
-  macos: {
-    supportsBrew: true,
-    supportsXcodeCLI: true
-  }
-}

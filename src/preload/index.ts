@@ -7,7 +7,8 @@ const electron = {
   ...electronAPI,
   scanEnvironment: () => ipcRenderer.invoke('scan:environment'),
   loadLastScan: () => ipcRenderer.invoke('load:lastScan'),
-  getInstallCommand: (toolId: string) => ipcRenderer.invoke('install:get-command', toolId)
+  getInstallCommand: (toolId: string) => ipcRenderer.invoke('install:get-command', toolId),
+  getPlatform: () => ipcRenderer.invoke('platform:get')
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
