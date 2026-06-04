@@ -6,13 +6,18 @@ import { isVersionLowerThan } from '../../shared/utils/version'
 import { executeCommand } from './command.service'
 import { getCurrentPlatform } from './platform.service'
 
-// On Windows, Electron inherits PATH from the moment it started. Tools installed
-// while the app is running won't be found until we refresh from the registry.
+// On Windows, Electron inherits PATH from the moment it launched. Tools installed
+// later won't be found until we refresh from the registry.
+// We force UTF-8 output from PowerShell ([Console]::OutputEncoding) so that
+// non-ASCII characters in user home paths (e.g. ã, é) survive the exec() pipe
+// without getting corrupted by the system OEM code page.
 async function refreshWindowsPath(): Promise<void> {
   if (process.platform !== 'win32') return
 
   const freshPath = await executeCommand(
-    "powershell -NoProfile -Command \"[System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')\""
+    "powershell -NoProfile -Command \"[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;" +
+    "[System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' +" +
+    "[System.Environment]::GetEnvironmentVariable('Path','User')\""
   )
   if (freshPath) {
     process.env['PATH'] = freshPath

@@ -5,7 +5,7 @@ const execAsync = promisify(exec)
 
 export async function executeCommand(command: string): Promise<string | null> {
   try {
-    const { stdout } = await execAsync(command)
+    const { stdout } = await execAsync(command, { encoding: 'utf8' })
     return stdout.trim()
   } catch {
     return null
