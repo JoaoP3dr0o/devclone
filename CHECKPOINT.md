@@ -3,6 +3,7 @@
 **Data:** 2026-06-03
 **Branch:** main
 **Último commit:** `acce12e fix(scan): handle UTF-8 encoding for PATH with special characters on Windows`
+**Sessão atual:** ToolsPage implementada (não commitada)
 **Remote:** sincronizado com `origin/main`
 
 ---
@@ -29,6 +30,7 @@ O DevClone é um app Electron + React + TypeScript que escaneia ferramentas de d
 | ProfilePage completa: checkboxes, nome editável, 4 presets, auto-detect | ✅ |
 | Zustand global store (`useAppStore`): perfil + scan compartilhados | ✅ |
 | Reatividade entre páginas: score na Home atualiza ao mudar perfil | ✅ |
+| ToolsPage: catálogo completo, busca, filtros por categoria + status, badge "No perfil" | ✅ |
 
 ### Estrutura de arquivos relevantes
 
@@ -76,24 +78,24 @@ src/
 |---|---|---|
 | `mockTools` como fallback pré-scan | UX | Mostra versões fictícias antes do primeiro scan |
 | postgres versionRegex `\d+\.\d+\.\d+` | Detecção | psql retorna `15.3` — versão sempre nula |
-| `ToolsPage`, `ScanPage`, `SettingsPage` são placeholders | Feature gap | Rotas existem mas sem conteúdo |
+| `ScanPage`, `SettingsPage` são placeholders | Feature gap | Rotas existem mas sem conteúdo |
 | `PLATFORM_CAPABILITIES` detecta docker via `docker --version` | Imprecisão | Docker instalado por outros meios não é detectado |
 
 ---
 
-## Próximo passo — Página /tools completa
+## Próximo passo — Página /scan completa
 
-**Objetivo:** transformar `ToolsPage.tsx` (placeholder) no catálogo completo de todas as 13 ferramentas, com status real do scan e filtros.
+**Objetivo:** transformar `ScanPage.tsx` (placeholder) na página de scan do ambiente, mostrando progresso ferramenta por ferramenta, histórico de scans e resultado detalhado.
 
 ### O que já existe para aproveitar:
-- `toolsCatalog` com 13 ferramentas, categorias, descrições e install methods
-- `useEnvironmentScan()` expõe `scanResult` do store global
-- `StatusBadge` e `ToolDetailsModal` já prontos no `Home.tsx`
-- `useActiveProfile()` para saber quais ferramentas estão no perfil ativo
+- `useEnvironmentScan()` com `loading`, `scanResult`, `lastScanAt`, `scanEnvironment`
+- `scan:environment` IPC já implementado no main (retorna `EnvironmentScanResult`)
+- `storage.service.ts` já salva `last-scan.json` em `userData`
+- `StatusBadge` e `ToolDetailsModal` reutilizáveis
 
 ### O que implementar:
-1. **Grid/lista** de todas as 13 ferramentas com status real (`Instalado` / `Ausente` / `Desatualizado`)
-2. **Filtros** por categoria e/ou status (chips clicáveis no topo)
-3. **Barra de busca** por nome
-4. **Modal de detalhes** ao clicar (reutilizar `ToolDetailsModal`)
-5. **Indicador de perfil**: ícone/badge nas ferramentas que fazem parte do perfil ativo
+1. **Botão "Iniciar Scan"** com estado de loading e resultado
+2. **Lista de ferramentas** com status individual pós-scan (animação durante o scan)
+3. **Resumo**: total instalado / ausente / desatualizado
+4. **Data/hora do último scan** e botão de re-scan
+5. **Mensagem de estado vazio** quando nunca foi feito scan
