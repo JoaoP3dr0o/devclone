@@ -2,7 +2,8 @@
 
 **Data:** 2026-06-03
 **Branch:** main
-**Último commit:** `d63436f refactor(state): add Zustand global store for tools and profile`
+**Último commit:** `acce12e fix(scan): handle UTF-8 encoding for PATH with special characters on Windows`
+**Remote:** sincronizado com `origin/main`
 
 ---
 
@@ -15,18 +16,19 @@ O DevClone é um app Electron + React + TypeScript que escaneia ferramentas de d
 | Área | Status |
 |---|---|
 | Scan real do ambiente via IPC (`scan:environment`) | ✅ |
-| Detecção dinâmica de plataforma + capabilities via IPC (`platform:get`) | ✅ |
+| Detecção de PHP com path não-ASCII no Windows (fix UTF-8) | ✅ |
+| Detecção dinâmica de plataforma + capabilities via IPC | ✅ |
 | Persistência do resultado em `userData/last-scan.json` | ✅ |
-| Comando de instalação por tool via IPC (`install:get-command`) | ✅ |
+| Comando de instalação por tool via IPC | ✅ |
 | Cálculo de compatibilidade com profile ativo | ✅ |
 | Engine de recomendações com severidade por tool | ✅ |
 | Roteador com 5 rotas: `/`, `/tools`, `/scan`, `/profile`, `/settings` | ✅ |
 | Sidebar com `NavLink` e highlight ativo dinâmico | ✅ |
 | Catálogo de 13 ferramentas com `outdatedStatus` e `installMethods` | ✅ |
 | Modal de detalhes de ferramenta com insight e install command | ✅ |
-| **ProfilePage completa**: checkboxes, nome editável, 4 presets, auto-detect | ✅ |
-| **Zustand global store** (`useAppStore`): perfil + scan compartilhados | ✅ |
-| **Reatividade entre páginas**: score na Home atualiza ao mudar perfil | ✅ |
+| ProfilePage completa: checkboxes, nome editável, 4 presets, auto-detect | ✅ |
+| Zustand global store (`useAppStore`): perfil + scan compartilhados | ✅ |
+| Reatividade entre páginas: score na Home atualiza ao mudar perfil | ✅ |
 
 ### Estrutura de arquivos relevantes
 
@@ -35,47 +37,35 @@ src/
   main/
     ipc/
       install.ipc.ts      — install:get-command
-      platform.ipc.ts     — platform:get (detecção dinâmica)
+      platform.ipc.ts     — platform:get
       scan.ipc.ts         — scan:environment, load:lastScan
     services/
-      command.service.ts  — executa comandos shell
+      command.service.ts  — executeCommand({ encoding:'utf8' }), spawnCommand
       install.service.ts  — resolve install command por plataforma
       platform.service.ts — detecta SO + capabilities reais
-      scan.service.ts     — itera catálogo e escaneia tools
+      scan.service.ts     — refreshWindowsPath (UTF-8 fix) + scanTool por plataforma
       storage.service.ts  — salva/lê last-scan.json
   preload/
-    index.ts              — expõe IPC bridge para o renderer
-    index.d.ts            — tipos do window.electron
+    index.ts / index.d.ts — IPC bridge para o renderer
   renderer/src/
     store/
-      useAppStore.ts      — Zustand store: userProfile, environmentProfile,
-                            scanResult, lastScanAt, loadProfile, setProfile,
-                            loadLastScan, triggerScan
+      useAppStore.ts      — Zustand: userProfile, environmentProfile,
+                            scanResult, lastScanAt + actions
     pages/
-      Home.tsx            — dashboard principal (lê do store via hooks)
-      ToolsPage.tsx       — placeholder (catálogo completo)
-      ScanPage.tsx        — placeholder (scan detalhado)
-      ProfilePage.tsx     — gerenciamento de perfil (lê/escreve no store)
-      SettingsPage.tsx    — placeholder (configurações)
-    components/
-      Layout.tsx          — grid sidebar + conteúdo
-      Sidebar.tsx         — NavLink com isActive
-      ToolList.tsx        — lista de ferramentas com StatusBadge
-      ToolDetailsModal.tsx — modal com insight, versão e install command
-      RecommendationsPanel.tsx
-      StatCard.tsx / StepList.tsx / StatusBadge.tsx
+      Home.tsx            — dashboard com score, ferramentas, recomendações
+      ToolsPage.tsx       — ⚠️ placeholder vazio
+      ScanPage.tsx        — ⚠️ placeholder vazio
+      ProfilePage.tsx     — perfil completo (checkboxes, presets, nome)
+      SettingsPage.tsx    — ⚠️ placeholder vazio
     hooks/
-      useActiveProfile.ts — thin wrapper do store (userProfile, setProfile)
-      useEnvironmentScan.ts — thin wrapper do store (scanResult, triggerScan)
-    App.tsx               — StoreInitializer carrega perfil + scan no mount
+      useActiveProfile.ts — wrapper do store
+      useEnvironmentScan.ts — wrapper do store
+    App.tsx               — StoreInitializer + rotas
   shared/
-    platform/             — tipos PlatformId, CurrentPlatform, capabilities
-    profiles/             — EnvironmentProfile, compatibility calculator,
-                            defaultProfiles (4 presets), userProfile.utils
-    recommendations/      — engine de recomendações com severidade
+    profiles/             — defaultProfiles (4 presets), compatibility, userProfile.utils
+    recommendations/      — engine com severidade
     tools/                — catalog.ts (13 tools), insights.ts, install.types.ts
-    scan.types.ts         — ToolScanResult, EnvironmentScanResult, LastScanStorage
-    utils/version.ts      — compareVersions, isVersionLowerThan
+    scan.types.ts / utils/version.ts
 ```
 
 ---
@@ -85,24 +75,25 @@ src/
 | Item | Impacto | Notas |
 |---|---|---|
 | `mockTools` como fallback pré-scan | UX | Mostra versões fictícias antes do primeiro scan |
-| postgres versionRegex `\d+\.\d+\.\d+` não captura output real do psql | Detecção | psql retorna `15.3`, não `15.3.0` — versão sempre nula |
-| Páginas placeholder sem conteúdo funcional | Feature gap | ToolsPage, ScanPage, SettingsPage ainda são placeholders |
-| `PLATFORM_CAPABILITIES` detecta `docker --version` como proxy para DockerDesktop | Imprecisão | Docker pode estar instalado por outros meios |
+| postgres versionRegex `\d+\.\d+\.\d+` | Detecção | psql retorna `15.3` — versão sempre nula |
+| `ToolsPage`, `ScanPage`, `SettingsPage` são placeholders | Feature gap | Rotas existem mas sem conteúdo |
+| `PLATFORM_CAPABILITIES` detecta docker via `docker --version` | Imprecisão | Docker instalado por outros meios não é detectado |
 
 ---
 
-## Próximo passo — Instalação guiada
+## Próximo passo — Página /tools completa
 
-**Objetivo:** quando o usuário clicar em "Instalar" em um tool com status `missing`, exibir o comando de instalação, pedir confirmação e executar com feedback de progresso em tempo real.
+**Objetivo:** transformar `ToolsPage.tsx` (placeholder) no catálogo completo de todas as 13 ferramentas, com status real do scan e filtros.
 
 ### O que já existe para aproveitar:
-- `install:get-command` IPC retorna o comando correto por plataforma
-- `executeCommand` em `command.service.ts` executa shell commands
-- `ToolDetailsModal.tsx` já exibe o install command como texto
-- `useAppStore.triggerScan` pode ser chamado após instalar para atualizar o estado
+- `toolsCatalog` com 13 ferramentas, categorias, descrições e install methods
+- `useEnvironmentScan()` expõe `scanResult` do store global
+- `StatusBadge` e `ToolDetailsModal` já prontos no `Home.tsx`
+- `useActiveProfile()` para saber quais ferramentas estão no perfil ativo
 
-### O que falta implementar:
-1. IPC `install:run-command` que executa o comando e faz stream do output via `webContents.send`
-2. Listener no preload e renderer para receber chunks de output em tempo real
-3. UI de confirmação: preview do comando → botão "Executar" → progress log
-4. Chamar `triggerScan()` do store automaticamente ao terminar a instalação
+### O que implementar:
+1. **Grid/lista** de todas as 13 ferramentas com status real (`Instalado` / `Ausente` / `Desatualizado`)
+2. **Filtros** por categoria e/ou status (chips clicáveis no topo)
+3. **Barra de busca** por nome
+4. **Modal de detalhes** ao clicar (reutilizar `ToolDetailsModal`)
+5. **Indicador de perfil**: ícone/badge nas ferramentas que fazem parte do perfil ativo
