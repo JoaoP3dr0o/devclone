@@ -8,32 +8,23 @@ import type { EnvironmentScanResult } from '@shared/scan.types'
 import { toolsCatalog } from '@shared/tools/catalog'
 
 import { useActiveProfile } from '../hooks/useActiveProfile'
+import { useAppStore } from '../store/useAppStore'
 
 export default function ProfilePage(): React.JSX.Element {
   const { userProfile, saveProfile, profileLoading } = useActiveProfile()
+  const scanResult = useAppStore((s) => s.scanResult)
   const [nameInput, setNameInput] = useState('')
   const [showPresetModal, setShowPresetModal] = useState(false)
   const [savedIndicator, setSavedIndicator] = useState(false)
-  const [scanResult, setScanResult] = useState<EnvironmentScanResult | null>(null)
-  const [detectedProfile, setDetectedProfile] = useState<EnvironmentProfile | null>(null)
   const nameInputRef = useRef<HTMLInputElement>(null)
+
+  const detectedProfile = scanResult ? detectBestProfile(scanResult, defaultProfiles) : null
 
   useEffect(() => {
     if (!profileLoading) {
       setNameInput(userProfile.name)
     }
   }, [profileLoading, userProfile.name])
-
-  useEffect(() => {
-    window.electron
-      .loadLastScan()
-      .then((saved) => {
-        if (!saved) return
-        setScanResult(saved.tools)
-        setDetectedProfile(detectBestProfile(saved.tools, defaultProfiles))
-      })
-      .catch(() => {})
-  }, [])
 
   async function persistProfile(profile: UserProfile): Promise<void> {
     await saveProfile(profile)

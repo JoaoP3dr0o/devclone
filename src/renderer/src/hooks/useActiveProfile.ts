@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react'
-
-import { userProfileToEnvironmentProfile, DEFAULT_USER_PROFILE } from '@shared/profiles/userProfile.utils'
 import type { EnvironmentProfile, UserProfile } from '@shared/profiles/profile.types'
+import { useAppStore } from '../store/useAppStore'
 
 type UseActiveProfileResult = {
   userProfile: UserProfile
@@ -11,26 +9,10 @@ type UseActiveProfileResult = {
 }
 
 export function useActiveProfile(): UseActiveProfileResult {
-  const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_USER_PROFILE)
-  const [profileLoading, setProfileLoading] = useState(true)
+  const userProfile = useAppStore((s) => s.userProfile)
+  const environmentProfile = useAppStore((s) => s.environmentProfile)
+  const profileLoading = useAppStore((s) => s.profileLoading)
+  const setProfile = useAppStore((s) => s.setProfile)
 
-  useEffect(() => {
-    window.electron
-      .getUserProfile()
-      .then((saved) => setUserProfile(saved ?? DEFAULT_USER_PROFILE))
-      .catch(() => setUserProfile(DEFAULT_USER_PROFILE))
-      .finally(() => setProfileLoading(false))
-  }, [])
-
-  async function saveProfile(profile: UserProfile): Promise<void> {
-    await window.electron.saveUserProfile(profile)
-    setUserProfile(profile)
-  }
-
-  return {
-    userProfile,
-    environmentProfile: userProfileToEnvironmentProfile(userProfile),
-    profileLoading,
-    saveProfile
-  }
+  return { userProfile, environmentProfile, profileLoading, saveProfile: setProfile }
 }
