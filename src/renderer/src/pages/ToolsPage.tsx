@@ -324,6 +324,10 @@ function ToolsPage(): React.JSX.Element {
         tool={selectedTool}
         onClose={() => setSelectedTool(null)}
         onInstallSuccess={scanEnvironment}
+        onOpenTool={(depId) => {
+          const dep = tools.find((t) => t.id === depId)
+          if (dep) setSelectedTool(dep)
+        }}
       />
     </section>
   )

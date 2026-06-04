@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import type { DevTool } from '../types/tools'
+import type { DevTool, DevToolId } from '../types/tools'
 
 import StatusBadge from './StatusBadge'
 import ToolDetailsModal from './ToolDetailsModal'
@@ -106,6 +106,10 @@ function ToolList({ tools, hasScanResult = false, onToolInstalled }: ToolListPro
         tool={selectedTool}
         onClose={() => setSelectedTool(null)}
         onInstallSuccess={onToolInstalled}
+        onOpenTool={(depId: DevToolId) => {
+          const dep = tools.find((t) => t.id === depId)
+          if (dep) setSelectedTool(dep)
+        }}
       />
     </>
   )

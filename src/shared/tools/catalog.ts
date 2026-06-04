@@ -28,6 +28,7 @@ export type ToolCatalogItem = {
   minimumVersion?: string
   recommendedVersion?: string
   outdatedStatus?: 'warning' | 'outdated'
+  requires?: ToolCatalogItem['id'][]
 }
 
 export const toolsCatalog: ToolCatalogItem[] = [
@@ -96,6 +97,7 @@ export const toolsCatalog: ToolCatalogItem[] = [
     command: 'pnpm -v',
     versionRegex: '\\d+\\.\\d+\\.\\d+',
     supportedPlatforms: ALL_PLATFORMS,
+    requires: ['node'],
     installMethods: {
       windows: 'winget install --id pnpm.pnpm -e',
       linux: 'sudo npm install -g pnpm',
@@ -110,6 +112,7 @@ export const toolsCatalog: ToolCatalogItem[] = [
     command: 'bun -v',
     versionRegex: '\\d+\\.\\d+\\.\\d+',
     supportedPlatforms: ALL_PLATFORMS,
+    requires: ['node'],
     installMethods: {
       windows: 'winget install --id Oven-sh.Bun -e',
       linux: 'curl -fsSL https://bun.sh/install | bash',
@@ -139,6 +142,7 @@ export const toolsCatalog: ToolCatalogItem[] = [
     command: 'composer --version',
     versionRegex: '\\d+\\.\\d+\\.\\d+',
     supportedPlatforms: ALL_PLATFORMS,
+    requires: ['php'],
     installMethods: {
       windows: 'winget install --id Composer.Composer -e',
       linux: 'sudo apt install composer -y',
@@ -153,6 +157,7 @@ export const toolsCatalog: ToolCatalogItem[] = [
     command: 'laravel --version',
     versionRegex: '\\d+\\.\\d+\\.\\d+',
     supportedPlatforms: ALL_PLATFORMS,
+    requires: ['composer'],
     installMethods: {
       windows: 'composer global require laravel/installer',
       linux: 'composer global require laravel/installer',

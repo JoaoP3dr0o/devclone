@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { getToolInsight, getToolInsightMessage } from '@shared/tools/insights'
-import type { DevTool } from '../types/tools'
+import { toolsCatalog } from '@shared/tools/catalog'
+import { mockTools } from '../data/mockTools'
+import { useEnvironmentScan } from '../hooks/useEnvironmentScan'
+import type { DevTool, DevToolId } from '../types/tools'
 
 import StatusBadge from './StatusBadge'
 
@@ -12,6 +15,7 @@ type ToolDetailsModalProps = {
   tool: DevTool | null
   onClose: () => void
   onInstallSuccess?: () => void
+  onOpenTool?: (toolId: DevToolId) => void
 }
 
 function getStatusInsight(tool: DevTool): string {
@@ -22,8 +26,10 @@ function getStatusInsight(tool: DevTool): string {
 function ToolDetailsModal({
   tool,
   onClose,
-  onInstallSuccess
+  onInstallSuccess,
+  onOpenTool
 }: ToolDetailsModalProps): React.JSX.Element | null {
+  const { scanResult } = useEnvironmentScan()
   const [installCommand, setInstallCommand] = useState<string | null>(null)
   const [installPhase, setInstallPhase] = useState<InstallPhase>('idle')
   const [outputLog, setOutputLog] = useState<string[]>([])
@@ -69,6 +75,17 @@ function ToolDetailsModal({
   }, [outputLog])
 
   if (!tool) return null
+
+  const catalogItem = toolsCatalog.find((c) => c.id === tool.id)
+  const missingDeps = (catalogItem?.requires ?? [])
+    .map((depId) => {
+      const base = mockTools.find((t) => t.id === depId)
+      if (!base) return null
+      const scanned = scanResult?.tools.find((t) => t.id === depId)
+      const status = scanned ? scanned.status : base.status
+      return status === 'missing' ? { id: depId as DevToolId, name: base.name } : null
+    })
+    .filter((d): d is { id: DevToolId; name: string } => d !== null)
 
   const insight = getToolInsight(tool.id)
   const installCommandPreview = installCommand ?? 'Indisponível para esta plataforma'
@@ -229,17 +246,60 @@ function ToolDetailsModal({
 
           {/* Install section */}
           {tool.status === 'missing' && (
-            <InstallSection
-              phase={installPhase}
-              command={installCommand}
-              outputLog={outputLog}
-              result={installResult}
-              logEndRef={logEndRef}
-              onRequestInstall={() => setInstallPhase('confirm')}
-              onConfirm={handleRunInstall}
-              onCancel={() => setInstallPhase('idle')}
-              onRescan={handleRescanAndClose}
-            />
+            <>
+              {missingDeps.length > 0 && installPhase === 'idle' && (
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {missingDeps.map((dep) => (
+                    <div
+                      key={dep.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                        padding: '10px 14px',
+                        borderRadius: 12,
+                        background: 'rgba(251, 191, 36, 0.08)',
+                        border: '1px solid rgba(251, 191, 36, 0.22)'
+                      }}
+                    >
+                      <span style={{ color: '#fcd34d', fontSize: 13 }}>
+                        ⚠️ Requer {dep.name} instalado primeiro
+                      </span>
+                      {onOpenTool && (
+                        <button
+                          onClick={() => onOpenTool(dep.id)}
+                          style={{
+                            border: '1px solid rgba(251, 191, 36, 0.3)',
+                            borderRadius: 8,
+                            padding: '5px 12px',
+                            background: 'rgba(251, 191, 36, 0.12)',
+                            color: '#fcd34d',
+                            fontSize: 12,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          Ver {dep.name}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <InstallSection
+                phase={installPhase}
+                command={installCommand}
+                outputLog={outputLog}
+                result={installResult}
+                logEndRef={logEndRef}
+                onRequestInstall={() => setInstallPhase('confirm')}
+                onConfirm={handleRunInstall}
+                onCancel={() => setInstallPhase('idle')}
+                onRescan={handleRescanAndClose}
+              />
+            </>
           )}
         </div>
       </div>
