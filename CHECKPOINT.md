@@ -31,6 +31,7 @@ O DevClone é um app Electron + React + TypeScript que escaneia ferramentas de d
 | Zustand global store (`useAppStore`): perfil + scan compartilhados | ✅ |
 | Reatividade entre páginas: score na Home atualiza ao mudar perfil | ✅ |
 | ToolsPage: catálogo completo, busca, filtros por categoria + status, badge "No perfil" | ✅ |
+| ScanPage: botão scan, progress animado por ferramenta, cards resumo, timeline diff, nav /tools | ✅ |
 
 ### Estrutura de arquivos relevantes
 
@@ -78,24 +79,17 @@ src/
 |---|---|---|
 | `mockTools` como fallback pré-scan | UX | Mostra versões fictícias antes do primeiro scan |
 | postgres versionRegex `\d+\.\d+\.\d+` | Detecção | psql retorna `15.3` — versão sempre nula |
-| `ScanPage`, `SettingsPage` são placeholders | Feature gap | Rotas existem mas sem conteúdo |
+| `SettingsPage` é placeholder | Feature gap | Rota existe mas sem conteúdo |
 | `PLATFORM_CAPABILITIES` detecta docker via `docker --version` | Imprecisão | Docker instalado por outros meios não é detectado |
 
 ---
 
-## Próximo passo — Página /scan completa
+## Próximo passo — Página /settings
 
-**Objetivo:** transformar `ScanPage.tsx` (placeholder) na página de scan do ambiente, mostrando progresso ferramenta por ferramenta, histórico de scans e resultado detalhado.
+**Objetivo:** transformar `SettingsPage.tsx` (placeholder) em uma página de configurações útil.
 
-### O que já existe para aproveitar:
-- `useEnvironmentScan()` com `loading`, `scanResult`, `lastScanAt`, `scanEnvironment`
-- `scan:environment` IPC já implementado no main (retorna `EnvironmentScanResult`)
-- `storage.service.ts` já salva `last-scan.json` em `userData`
-- `StatusBadge` e `ToolDetailsModal` reutilizáveis
-
-### O que implementar:
-1. **Botão "Iniciar Scan"** com estado de loading e resultado
-2. **Lista de ferramentas** com status individual pós-scan (animação durante o scan)
-3. **Resumo**: total instalado / ausente / desatualizado
-4. **Data/hora do último scan** e botão de re-scan
-5. **Mensagem de estado vazio** quando nunca foi feito scan
+### Sugestões de conteúdo:
+1. **Tema / aparência** (preparação para futuro, mesmo que sem efeito ainda)
+2. **Dados locais**: botão para limpar `last-scan.json` e `user-profile.json`
+3. **Informações do app**: versão do Electron, versão do app
+4. **Export**: exportar last-scan.json como arquivo
