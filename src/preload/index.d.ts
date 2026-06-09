@@ -8,6 +8,7 @@ import type { PreflightResult } from '../shared/tools/preflight.types'
 export type InstallOutputChunk = { type: 'stdout' | 'stderr'; text: string }
 export type InstallResult = { success: boolean; exitCode?: number; error?: string }
 export type PreflightFixResult = { success: boolean; error?: string }
+export type AppSettings = { autoScan: boolean }
 
 type DevCloneElectronAPI = ElectronAPI & {
   scanEnvironment: () => Promise<LastScanStorage>
@@ -19,6 +20,11 @@ type DevCloneElectronAPI = ElectronAPI & {
   removeInstallListeners: () => void
   getUserProfile: () => Promise<UserProfile | null>
   saveUserProfile: (profile: UserProfile) => Promise<void>
+  getVersion: () => Promise<string>
+  getUserDataPath: () => Promise<string>
+  clearScanData: () => Promise<void>
+  getSettings: () => Promise<AppSettings>
+  saveSettings: (settings: AppSettings) => Promise<void>
   preflight: {
     run: (toolId: string, platform: string) => Promise<PreflightResult>
     fix: (checkId: string) => Promise<PreflightFixResult>

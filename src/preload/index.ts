@@ -16,6 +16,11 @@ const electron = {
   removeInstallListeners: () => ipcRenderer.removeAllListeners('install:output'),
   getUserProfile: () => ipcRenderer.invoke('profile:get'),
   saveUserProfile: (profile: unknown) => ipcRenderer.invoke('profile:save', profile),
+  getVersion: () => ipcRenderer.invoke('app:getVersion'),
+  getUserDataPath: () => ipcRenderer.invoke('app:getUserDataPath'),
+  clearScanData: () => ipcRenderer.invoke('app:clearScanData'),
+  getSettings: () => ipcRenderer.invoke('app:getSettings'),
+  saveSettings: (settings: { autoScan: boolean }) => ipcRenderer.invoke('app:saveSettings', settings),
   preflight: {
     run: (toolId: string, platform: string) =>
       ipcRenderer.invoke('preflight:run', toolId, platform),

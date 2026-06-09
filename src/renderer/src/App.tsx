@@ -12,7 +12,18 @@ import { toolsCatalog } from '@shared/tools/catalog'
 function StoreInitializer(): null {
   useEffect(() => {
     void useAppStore.getState().loadProfile()
-    void useAppStore.getState().loadLastScan()
+    window.electron
+      .getSettings()
+      .then((settings) => {
+        if (settings.autoScan) {
+          void useAppStore.getState().triggerScan()
+        } else {
+          void useAppStore.getState().loadLastScan()
+        }
+      })
+      .catch(() => {
+        void useAppStore.getState().loadLastScan()
+      })
   }, [])
   return null
 }

@@ -7,6 +7,7 @@ import { registerPlatformIpc } from './ipc/platform.ipc'
 import { registerPreflightIpc } from './ipc/preflight.ipc'
 import { registerProfileIpc } from './ipc/profile.ipc'
 import { registerScanIpc } from './ipc/scan.ipc'
+import { registerSettingsIpc } from './ipc/settings.ipc'
 
 function createWindow(): void {
   // Create the browser window.
@@ -63,6 +64,7 @@ app.whenReady().then(() => {
   registerPlatformIpc()
   registerProfileIpc()
   registerPreflightIpc()
+  registerSettingsIpc()
 
   createWindow()
 

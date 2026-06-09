@@ -18,6 +18,7 @@ type AppStore = {
   setProfile: (profile: UserProfile) => Promise<void>
   loadLastScan: () => Promise<void>
   triggerScan: () => Promise<void>
+  clearScanData: () => Promise<void>
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -72,5 +73,10 @@ export const useAppStore = create<AppStore>((set) => ({
       const message = error instanceof Error ? error.message : 'Não foi possível escanear o ambiente.'
       set({ scanError: message, scanLoading: false })
     }
+  },
+
+  clearScanData: async () => {
+    await window.electron.clearScanData()
+    set({ scanResult: null, lastScanAt: null })
   }
 }))
