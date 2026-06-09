@@ -1,5 +1,7 @@
 import type { ToolCatalogItem } from '@shared/tools/catalog'
-import type { ToolScanStatus } from '@shared/scan.types'
+import type { MissingDep, ToolScanStatus } from '@shared/scan.types'
+
+export type { MissingDep }
 
 export type ToolStatus = ToolScanStatus | 'pending' | 'unverified'
 
@@ -14,4 +16,5 @@ export type DevTool = {
   version?: string
   minimumVersion?: string
   recommendedVersion?: string
+  missingDeps?: MissingDep[]
 }

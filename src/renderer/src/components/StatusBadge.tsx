@@ -9,6 +9,7 @@ type StatusBadgeProps = {
 function getStatusLabel(status: ToolStatus): string {
   if (status === 'healthy') return 'Instalado'
   if (status === 'warning') return 'Atenção'
+  if (status === 'degraded') return 'Atenção'
   if (status === 'outdated') return 'Desatualizado'
   if (status === 'missing') return 'Ausente'
   if (status === 'unsupported') return 'Não suportado'
@@ -38,6 +39,14 @@ function getStatusStyle(status: ToolStatus): CSSProperties {
       color: '#fb923c',
       background: 'rgba(251, 146, 60, 0.12)',
       border: '1px solid rgba(251, 146, 60, 0.25)'
+    }
+  }
+
+  if (status === 'degraded') {
+    return {
+      color: '#facc15',
+      background: 'rgba(250, 204, 21, 0.12)',
+      border: '1px solid rgba(250, 204, 21, 0.25)'
     }
   }
 

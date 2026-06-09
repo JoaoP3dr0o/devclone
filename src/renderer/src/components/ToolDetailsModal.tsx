@@ -6,7 +6,7 @@ import { getToolInsight, getToolInsightMessage } from '@shared/tools/insights'
 import { toolsCatalog } from '@shared/tools/catalog'
 import { mockTools } from '../data/mockTools'
 import { useEnvironmentScan } from '../hooks/useEnvironmentScan'
-import type { DevTool, DevToolId } from '../types/tools'
+import type { DevTool, DevToolId, MissingDep } from '../types/tools'
 
 import StatusBadge from './StatusBadge'
 
@@ -31,7 +31,7 @@ function ToolDetailsModal({
   onInstallSuccess,
   onOpenTool
 }: ToolDetailsModalProps): React.JSX.Element | null {
-  const { scanResult } = useEnvironmentScan()
+  const { scanResult, scanEnvironment } = useEnvironmentScan()
   const [installCommand, setInstallCommand] = useState<string | null>(null)
   const [installPhase, setInstallPhase] = useState<InstallPhase>('idle')
   const [outputLog, setOutputLog] = useState<string[]>([])
@@ -86,6 +86,15 @@ function ToolDetailsModal({
   }, [outputLog])
 
   if (!tool) return null
+
+  const scannedTool = scanResult?.tools.find((t) => t.id === tool.id)
+  const degradedDeps: MissingDep[] =
+    tool.status === 'degraded' ? (scannedTool?.missingDeps ?? []) : []
+
+  async function handleFix(depId: string): Promise<void> {
+    await window.electron.preflight.fix(depId)
+    await scanEnvironment()
+  }
 
   const catalogItem = toolsCatalog.find((c) => c.id === tool.id)
   const missingDeps = (catalogItem?.requires ?? [])
@@ -216,6 +225,46 @@ function ToolDetailsModal({
               </div>
 
               <InfoBlock label="Install command" value={installCommandPreview} />
+
+              {degradedDeps.length > 0 && (
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {degradedDeps.map((dep) => (
+                    <div
+                      key={dep.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                        padding: '10px 14px',
+                        borderRadius: 12,
+                        background: 'rgba(251, 191, 36, 0.08)',
+                        border: '1px solid rgba(251, 191, 36, 0.22)'
+                      }}
+                    >
+                      <span style={{ color: '#fcd34d', fontSize: 13 }}>⚠️ {dep.userMessage}</span>
+                      {dep.autoFixable && (
+                        <button
+                          onClick={() => void handleFix(dep.id)}
+                          style={{
+                            border: '1px solid rgba(251, 191, 36, 0.3)',
+                            borderRadius: 8,
+                            padding: '5px 12px',
+                            background: 'rgba(251, 191, 36, 0.12)',
+                            color: '#fcd34d',
+                            fontSize: 12,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          Corrigir automaticamente
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div
                 style={{

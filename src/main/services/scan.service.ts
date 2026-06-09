@@ -1,10 +1,12 @@
-import type { EnvironmentScanResult, ToolScanResult } from '../../shared/scan.types'
+import type { EnvironmentScanResult, MissingDep, ToolScanResult } from '../../shared/scan.types'
 import type { PlatformId } from '../../shared/platform/platform.types'
 import { toolsCatalog, type ToolCatalogItem } from '../../shared/tools/catalog'
+import { dependencyMap } from '../../shared/tools/dependency-map'
 import { isVersionLowerThan } from '../../shared/utils/version'
 
 import { executeCommand } from './command.service'
 import { getCurrentPlatform } from './platform.service'
+import { runChecker } from './preflight.service'
 
 // On Windows, Electron inherits PATH from the moment it launched. Tools installed
 // later won't be found until we refresh from the registry.
@@ -56,6 +58,27 @@ function isToolSupportedOnPlatform(tool: ToolCatalogItem, platformId: PlatformId
   return tool.supportedPlatforms.includes(platformId)
 }
 
+async function checkToolDependencies(toolId: string, platformId: PlatformId): Promise<MissingDep[]> {
+  const deps = dependencyMap[toolId]?.[platformId] ?? []
+  if (deps.length === 0) return []
+
+  const results = await Promise.all(
+    deps.map(async (dep) => {
+      try {
+        const status = await runChecker(dep.id, platformId)
+        return status !== 'ok' ? dep : null
+      } catch {
+        console.warn(`[scan] Dependency check for ${dep.id} failed, treating as ok`)
+        return null
+      }
+    })
+  )
+
+  return results
+    .filter((dep): dep is NonNullable<typeof dep> => dep !== null)
+    .map(({ id, label, autoFixable, userMessage }) => ({ id, label, autoFixable, userMessage }))
+}
+
 async function scanTool(tool: ToolCatalogItem, platformId: PlatformId): Promise<ToolScanResult> {
   if (!isToolSupportedOnPlatform(tool, platformId)) {
     return createUnsupportedToolResult(tool)
@@ -66,7 +89,7 @@ async function scanTool(tool: ToolCatalogItem, platformId: PlatformId): Promise<
   const installed = version !== null
   const status = getToolStatus(tool, version)
 
-  return {
+  const result: ToolScanResult = {
     id: tool.id,
     name: tool.name,
     installed,
@@ -74,6 +97,15 @@ async function scanTool(tool: ToolCatalogItem, platformId: PlatformId): Promise<
     category: tool.category,
     status
   }
+
+  if (status === 'healthy') {
+    const deps = await checkToolDependencies(tool.id, platformId)
+    if (deps.length > 0) {
+      return { ...result, status: 'degraded', missingDeps: deps }
+    }
+  }
+
+  return result
 }
 
 export async function scanEnvironment(): Promise<EnvironmentScanResult> {

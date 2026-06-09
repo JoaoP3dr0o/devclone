@@ -1,6 +1,13 @@
 import type { ToolCatalogItem } from './tools/catalog'
 
-export type ToolScanStatus = 'healthy' | 'warning' | 'outdated' | 'missing' | 'unsupported'
+export type ToolScanStatus = 'healthy' | 'warning' | 'outdated' | 'missing' | 'unsupported' | 'degraded'
+
+export interface MissingDep {
+  id: string
+  label: string
+  autoFixable: boolean
+  userMessage: string
+}
 
 export type ToolScanResult = {
   id: ToolCatalogItem['id']
@@ -9,6 +16,7 @@ export type ToolScanResult = {
   version: string | null
   category: string
   status: ToolScanStatus
+  missingDeps?: MissingDep[]
 }
 
 export type EnvironmentScanResult = {

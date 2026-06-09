@@ -37,7 +37,7 @@ async function checkComposer(): Promise<CheckStatus> {
   return result !== null ? 'ok' : 'missing'
 }
 
-async function runChecker(checkId: string, platform: string): Promise<CheckStatus> {
+export async function runChecker(checkId: string, platform: string): Promise<CheckStatus> {
   switch (checkId) {
     case 'wsl2':
       return checkWsl2()
