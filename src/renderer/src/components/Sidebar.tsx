@@ -70,20 +70,6 @@ function Sidebar(): React.JSX.Element {
         </nav>
       </div>
 
-      <div
-        style={{
-          border: '1px solid rgba(148, 163, 184, 0.16)',
-          borderRadius: 16,
-          padding: 14,
-          background: 'rgba(15, 23, 42, 0.9)'
-        }}
-      >
-        <div style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>STATUS DO MVP</div>
-        <div style={{ fontWeight: 700 }}>Roteador ativo</div>
-        <div style={{ color: '#94a3b8', fontSize: 13, marginTop: 4 }}>
-          Próximo passo: instalação guiada.
-        </div>
-      </div>
     </aside>
   )
 }
