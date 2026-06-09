@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import RecommendationsPanel from '../components/RecommendationsPanel'
 import StatCard from '../components/StatCard'
@@ -49,6 +50,7 @@ function getToolScanVersion(
 }
 
 function Home(): React.JSX.Element {
+  const navigate = useNavigate()
   const [platformName, setPlatformName] = useState<string>('Detectando...')
   const { loading, error, scanResult, lastScanAt, scanEnvironment } = useEnvironmentScan()
   const { environmentProfile } = useActiveProfile()
@@ -233,6 +235,7 @@ function Home(): React.JSX.Element {
           </button>
 
           <button
+            onClick={() => navigate('/profile')}
             style={{
               border: '1px solid rgba(148, 163, 184, 0.24)',
               borderRadius: 12,
@@ -243,7 +246,7 @@ function Home(): React.JSX.Element {
               cursor: 'pointer'
             }}
           >
-            Criar perfil
+            Meu perfil
           </button>
         </div>
       </header>
