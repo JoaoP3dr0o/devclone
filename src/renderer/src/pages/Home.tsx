@@ -107,8 +107,7 @@ function Home(): React.JSX.Element {
             margin: '0 0 12px'
           }}
         >
-          O DevClone vai ajudar desenvolvedores Laravel + React a detectar ferramentas, salvar um
-          perfil local e futuramente restaurar tudo em uma nova máquina após login.
+          Escaneie seu ambiente, monte seu perfil e restaure tudo em qualquer máquina.
         </p>
 
         <p style={{ color: '#64748b', fontSize: 14, margin: '0 0 32px' }}>

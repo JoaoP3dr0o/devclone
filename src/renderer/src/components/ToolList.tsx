@@ -40,11 +40,9 @@ function ToolList({ tools, hasScanResult = false, onToolInstalled }: ToolListPro
           }}
         >
           <div>
-            <h2 style={{ margin: 0, fontSize: 18 }}>Ferramentas do MVP</h2>
+            <h2 style={{ margin: 0, fontSize: 18 }}>Ferramentas do seu ambiente</h2>
             <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: 13 }}>
-              {hasScanResult
-                ? 'Catálogo inicial com resultados do scan real.'
-                : 'Catálogo inicial focado em Laravel + React.'}
+              Resultado do último scan — clique para detalhes
             </p>
           </div>
         </div>
