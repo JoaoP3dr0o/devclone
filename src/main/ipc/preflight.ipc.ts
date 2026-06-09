@@ -1,3 +1,5 @@
+import { spawn } from 'child_process'
+
 import { ipcMain } from 'electron'
 
 import { spawnCommand } from '../services/command.service'
@@ -23,11 +25,20 @@ export function registerPreflightIpc(): void {
 
     try {
       if (checkId === 'wsl2') {
-        const { exitCode } = await spawnCommand(
-          "powershell -Command \"Start-Process -FilePath wsl -ArgumentList '--install' -Verb RunAs -Wait\"",
-          () => {}
-        )
-        return { success: exitCode === 0 }
+        return new Promise<{ success: boolean; error?: string }>((resolve) => {
+          const proc = spawn(
+            'powershell',
+            [
+              '-NonInteractive',
+              '-WindowStyle', 'Hidden',
+              '-Command',
+              "Start-Process powershell -ArgumentList '-NoExit','-Command','wsl --install' -Verb RunAs"
+            ],
+            { windowsHide: true }
+          )
+          proc.on('close', (code) => resolve({ success: code === 0 }))
+          proc.on('error', (err) => resolve({ success: false, error: String(err) }))
+        })
       }
 
       if (checkId === 'curl') {

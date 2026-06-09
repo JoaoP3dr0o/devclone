@@ -5,7 +5,7 @@ const execAsync = promisify(exec)
 
 export async function executeCommand(command: string): Promise<string | null> {
   try {
-    const { stdout } = await execAsync(command, { encoding: 'utf8' })
+    const { stdout } = await execAsync(command, { encoding: 'utf8', windowsHide: true })
     return stdout.trim()
   } catch {
     return null
@@ -21,7 +21,7 @@ export function spawnCommand(
   return new Promise((resolve, reject) => {
     const isWindows = process.platform === 'win32'
     const proc = isWindows
-      ? spawn('cmd', ['/c', command])
+      ? spawn('cmd', ['/c', command], { windowsHide: true })
       : spawn('sh', ['-c', command])
 
     proc.stdout.on('data', (data: Buffer) => onChunk({ type: 'stdout', text: data.toString() }))
