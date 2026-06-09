@@ -60,11 +60,108 @@ function Home(): React.JSX.Element {
       .catch(() => setPlatformName('Plataforma desconhecida'))
   }, [])
 
+  // Empty state — first use, no scan yet
+  if (!scanResult) {
+    return (
+      <section
+        style={{
+          padding: 32,
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 'calc(100vh - 64px)',
+          textAlign: 'center'
+        }}
+      >
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '6px 10px',
+            borderRadius: 999,
+            background: 'rgba(37, 99, 235, 0.14)',
+            color: '#93c5fd',
+            border: '1px solid rgba(147, 197, 253, 0.18)',
+            fontSize: 13,
+            marginBottom: 20
+          }}
+        >
+          {platformName} detectado · MVP local
+        </div>
+
+        <h1 style={{ fontSize: 42, lineHeight: 1.1, margin: '0 0 16px' }}>
+          Clone seu ambiente dev
+        </h1>
+
+        <p
+          style={{
+            color: '#94a3b8',
+            fontSize: 16,
+            maxWidth: 560,
+            lineHeight: 1.7,
+            margin: '0 0 12px'
+          }}
+        >
+          O DevClone vai ajudar desenvolvedores Laravel + React a detectar ferramentas, salvar um
+          perfil local e futuramente restaurar tudo em uma nova máquina após login.
+        </p>
+
+        <p style={{ color: '#64748b', fontSize: 14, margin: '0 0 32px' }}>
+          Escaneie seu ambiente para começar
+        </p>
+
+        {error && (
+          <div
+            style={{
+              border: '1px solid rgba(251, 113, 133, 0.25)',
+              borderRadius: 14,
+              padding: '12px 14px',
+              background: 'rgba(251, 113, 133, 0.1)',
+              color: '#fecdd3',
+              fontSize: 13,
+              marginBottom: 24,
+              maxWidth: 480
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        <button
+          onClick={scanEnvironment}
+          disabled={loading}
+          style={{
+            border: 'none',
+            borderRadius: 12,
+            padding: '14px 28px',
+            background: '#2563eb',
+            color: '#fff',
+            fontWeight: 700,
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.72 : 1,
+            fontSize: 16
+          }}
+        >
+          {loading ? 'Escaneando...' : 'Escanear ambiente'}
+        </button>
+      </section>
+    )
+  }
+
+  // After scan
+  const hasProfile = environmentProfile.tools.length > 0
+
   const tools = mockTools.map((tool) => ({
     ...tool,
     status: getToolScanStatus(tool, scanResult, loading),
     version: getToolScanVersion(tool, scanResult)
   }))
+
+  const displayedTools = hasProfile ? tools : tools.filter((t) => t.status !== 'missing')
+
   const compatibility = calculateProfileCompatibility(scanResult, environmentProfile)
   const recommendations = generateEnvironmentRecommendations(scanResult, environmentProfile)
 
@@ -109,8 +206,8 @@ function Home(): React.JSX.Element {
               marginTop: 14
             }}
           >
-            O DevClone vai ajudar desenvolvedores Laravel + React a detectar ferramentas,
-            salvar um perfil local e futuramente restaurar tudo em uma nova máquina após login.
+            O DevClone vai ajudar desenvolvedores Laravel + React a detectar ferramentas, salvar um
+            perfil local e futuramente restaurar tudo em uma nova máquina após login.
           </p>
           <div style={{ color: '#94a3b8', fontSize: 13, marginTop: 10 }}>
             Ultimo scan: {formatLastScanAt(lastScanAt)}
@@ -132,7 +229,7 @@ function Home(): React.JSX.Element {
               opacity: loading ? 0.72 : 1
             }}
           >
-            {loading ? 'Escaneando...' : 'Escanear ambiente'}
+            {loading ? 'Escaneando...' : 'Re-escanear'}
           </button>
 
           <button
@@ -167,38 +264,44 @@ function Home(): React.JSX.Element {
         </div>
       )}
 
-      <section
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: 16,
-          marginBottom: 28
-        }}
-      >
-        <StatCard label="Profile ativo" value={environmentProfile.name} />
-        <StatCard label="Compatibilidade" value={`${compatibility.score}%`} />
-        <StatCard label="OK" value={compatibility.healthy.length.toString()} />
-        <StatCard label="Ausentes" value={compatibility.missing.length.toString()} />
-        <StatCard label="Desatualizadas" value={compatibility.outdated.length.toString()} />
-      </section>
+      {hasProfile && (
+        <section
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: 16,
+            marginBottom: 28
+          }}
+        >
+          <StatCard label="Profile ativo" value={environmentProfile.name} />
+          <StatCard label="Compatibilidade" value={`${compatibility.score}%`} />
+          <StatCard label="OK" value={compatibility.healthy.length.toString()} />
+          <StatCard label="Ausentes" value={compatibility.missing.length.toString()} />
+          <StatCard label="Desatualizadas" value={compatibility.outdated.length.toString()} />
+        </section>
+      )}
 
       <section
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))',
+          gridTemplateColumns: hasProfile
+            ? 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))'
+            : '1fr',
           gap: 18,
           minWidth: 0
         }}
       >
         <ToolList
-          tools={tools}
-          hasScanResult={scanResult !== null}
+          tools={displayedTools}
+          hasScanResult={true}
           onToolInstalled={scanEnvironment}
         />
-        <div style={{ display: 'grid', gap: 18 }}>
-          <RecommendationsPanel recommendations={recommendations} />
-          <StepList />
-        </div>
+        {hasProfile && (
+          <div style={{ display: 'grid', gap: 18 }}>
+            <RecommendationsPanel recommendations={recommendations} />
+            <StepList />
+          </div>
+        )}
       </section>
     </section>
   )
