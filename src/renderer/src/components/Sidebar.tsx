@@ -3,7 +3,6 @@ import { NavLink } from 'react-router-dom'
 const menuItems = [
   { label: 'Home', path: '/', end: true },
   { label: 'Tools', path: '/tools', end: false },
-  { label: 'Scan', path: '/scan', end: false },
   { label: 'Profile', path: '/profile', end: false },
   { label: 'Settings', path: '/settings', end: false }
 ]
