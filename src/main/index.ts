@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerInstallIpc } from './ipc/install.ipc'
 import { registerPlatformIpc } from './ipc/platform.ipc'
+import { registerPreflightIpc } from './ipc/preflight.ipc'
 import { registerProfileIpc } from './ipc/profile.ipc'
 import { registerScanIpc } from './ipc/scan.ipc'
 
@@ -61,6 +62,7 @@ app.whenReady().then(() => {
   registerInstallIpc()
   registerPlatformIpc()
   registerProfileIpc()
+  registerPreflightIpc()
 
   createWindow()
 

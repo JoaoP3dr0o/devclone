@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
+import PreflightModal from './PreflightModal'
+
 import { getToolInsight, getToolInsightMessage } from '@shared/tools/insights'
 import { toolsCatalog } from '@shared/tools/catalog'
 import { mockTools } from '../data/mockTools'
@@ -34,7 +36,16 @@ function ToolDetailsModal({
   const [installPhase, setInstallPhase] = useState<InstallPhase>('idle')
   const [outputLog, setOutputLog] = useState<string[]>([])
   const [installResult, setInstallResult] = useState<InstallResult | null>(null)
+  const [showPreflight, setShowPreflight] = useState(false)
+  const [platformId, setPlatformId] = useState<string>('windows')
   const logEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    window.electron
+      .getPlatform()
+      .then((p) => setPlatformId(p.id))
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (!tool) {
@@ -294,11 +305,24 @@ function ToolDetailsModal({
                 outputLog={outputLog}
                 result={installResult}
                 logEndRef={logEndRef}
-                onRequestInstall={() => setInstallPhase('confirm')}
+                onRequestInstall={() => setShowPreflight(true)}
                 onConfirm={handleRunInstall}
                 onCancel={() => setInstallPhase('idle')}
                 onRescan={handleRescanAndClose}
               />
+
+              {showPreflight && tool && (
+                <PreflightModal
+                  toolId={tool.id}
+                  toolName={tool.name}
+                  platform={platformId}
+                  onProceed={() => {
+                    setShowPreflight(false)
+                    void handleRunInstall()
+                  }}
+                  onClose={() => setShowPreflight(false)}
+                />
+              )}
             </>
           )}
         </div>

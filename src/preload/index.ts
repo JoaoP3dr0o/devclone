@@ -15,7 +15,15 @@ const electron = {
   },
   removeInstallListeners: () => ipcRenderer.removeAllListeners('install:output'),
   getUserProfile: () => ipcRenderer.invoke('profile:get'),
-  saveUserProfile: (profile: unknown) => ipcRenderer.invoke('profile:save', profile)
+  saveUserProfile: (profile: unknown) => ipcRenderer.invoke('profile:save', profile),
+  preflight: {
+    run: (toolId: string, platform: string) =>
+      ipcRenderer.invoke('preflight:run', toolId, platform),
+    fix: (checkId: string) => ipcRenderer.invoke('preflight:fix', checkId),
+    savePending: (toolId: string) => ipcRenderer.invoke('preflight:save-pending', toolId),
+    getPending: () => ipcRenderer.invoke('preflight:get-pending'),
+    clearPending: () => ipcRenderer.invoke('preflight:clear-pending')
+  }
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
