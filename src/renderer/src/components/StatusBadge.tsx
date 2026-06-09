@@ -12,6 +12,7 @@ function getStatusLabel(status: ToolStatus): string {
   if (status === 'outdated') return 'Desatualizado'
   if (status === 'missing') return 'Ausente'
   if (status === 'unsupported') return 'Não suportado'
+  if (status === 'unverified') return 'Não verificado'
   return 'Pendente'
 }
 
@@ -45,6 +46,14 @@ function getStatusStyle(status: ToolStatus): CSSProperties {
       color: '#64748b',
       background: 'rgba(100, 116, 139, 0.1)',
       border: '1px solid rgba(100, 116, 139, 0.2)'
+    }
+  }
+
+  if (status === 'unverified') {
+    return {
+      color: '#94a3b8',
+      background: 'rgba(148, 163, 184, 0.08)',
+      border: '1px solid rgba(148, 163, 184, 0.2)'
     }
   }
 

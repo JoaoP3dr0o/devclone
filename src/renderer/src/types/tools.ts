@@ -1,7 +1,7 @@
 import type { ToolCatalogItem } from '@shared/tools/catalog'
 import type { ToolScanStatus } from '@shared/scan.types'
 
-export type ToolStatus = ToolScanStatus | 'pending'
+export type ToolStatus = ToolScanStatus | 'pending' | 'unverified'
 
 export type DevToolId = ToolCatalogItem['id']
 

@@ -19,8 +19,9 @@ function getToolScanStatus(
   loading: boolean
 ): ToolStatus {
   if (loading) return 'pending'
+  if (!scanResult) return 'unverified'
   const result = getScannedTool(tool, scanResult)
-  if (!result) return tool.status
+  if (!result) return 'unverified'
   return result.status
 }
 
@@ -28,8 +29,9 @@ function getToolScanVersion(
   tool: DevTool,
   scanResult: EnvironmentScanResult | null
 ): string | undefined {
+  if (!scanResult) return undefined
   const result = getScannedTool(tool, scanResult)
-  if (!result) return tool.version
+  if (!result) return undefined
   return result.version ?? undefined
 }
 
@@ -102,7 +104,6 @@ function ToolsPage(): React.JSX.Element {
       </header>
 
       <div style={{ display: 'grid', gap: 12, marginBottom: 22 }}>
-        {/* Search + Scan */}
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           <input
             type="search"
@@ -120,24 +121,6 @@ function ToolsPage(): React.JSX.Element {
               outline: 'none'
             }}
           />
-          <button
-            onClick={scanEnvironment}
-            disabled={loading}
-            style={{
-              border: 'none',
-              borderRadius: 12,
-              padding: '10px 16px',
-              background: '#2563eb',
-              color: '#fff',
-              fontWeight: 700,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.72 : 1,
-              fontSize: 14,
-              whiteSpace: 'nowrap'
-            }}
-          >
-            {loading ? 'Escaneando...' : 'Escanear'}
-          </button>
         </div>
 
         {/* Category chips */}
