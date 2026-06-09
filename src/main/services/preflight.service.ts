@@ -9,9 +9,25 @@ async function checkWsl2(): Promise<CheckStatus> {
 
 async function checkVirtualization(platform: string): Promise<CheckStatus> {
   if (platform === 'windows') {
-    const result = await executeCommand('wmic cpu get VirtualizationFirmwareEnabled')
-    if (result === null) return 'manual-required'
-    return result.toUpperCase().includes('TRUE') ? 'ok' : 'manual-required'
+    // Strategy 1: WSL2 functional → virtualization is already active
+    const wslStatus = await executeCommand('wsl --status')
+    if (wslStatus !== null) return 'ok'
+
+    // Strategy 2: Get-ComputerInfo (works on most modern Windows builds)
+    const computerInfo = await executeCommand(
+      'powershell -NonInteractive -Command "(Get-ComputerInfo -Property HyperVRequirementVirtualizationFirmwareEnabled).HyperVRequirementVirtualizationFirmwareEnabled"'
+    )
+    if (computerInfo !== null && computerInfo.toUpperCase().includes('TRUE')) return 'ok'
+
+    // Strategy 3: systeminfo Hyper-V requirements section
+    const sysInfo = await executeCommand('systeminfo')
+    if (sysInfo !== null && /Hyper-V.*Yes/i.test(sysInfo)) return 'ok'
+
+    // Strategy 4: wmic fallback (may return empty on some hardware like Dell Vostro)
+    const wmic = await executeCommand('wmic cpu get VirtualizationFirmwareEnabled')
+    if (wmic !== null && wmic.toUpperCase().includes('TRUE')) return 'ok'
+
+    return 'manual-required'
   }
 
   if (platform === 'linux') {
