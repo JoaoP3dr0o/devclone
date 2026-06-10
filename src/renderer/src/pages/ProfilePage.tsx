@@ -347,9 +347,12 @@ function ProfileManagerModal({ scanResult, onClose }: ProfileManagerModalProps):
   const storeCreateProfile = useAppStore((s) => s.createProfile)
   const storeDeleteProfile = useAppStore((s) => s.deleteProfile)
   const storeSetActiveProfile = useAppStore((s) => s.setActiveProfile)
+  const storeTriggerScan = useAppStore((s) => s.triggerScan)
 
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
+  const [scanning, setScanning] = useState(false)
+  const [noScanWarning, setNoScanWarning] = useState(false)
   const [activating, setActivating] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
 
@@ -363,6 +366,39 @@ function ProfileManagerModal({ scanResult, onClose }: ProfileManagerModalProps):
   async function handleCreate(name: string, toolIds: string[]): Promise<void> {
     const trimmed = name.trim()
     if (!trimmed) return
+    setCreating(true)
+    await storeCreateProfile(trimmed, toolIds)
+    setNewName('')
+    setCreating(false)
+  }
+
+  async function handleCreateManual(name: string): Promise<void> {
+    const trimmed = name.trim()
+    if (!trimmed) return
+
+    setNoScanWarning(false)
+    let toolIds: string[]
+
+    if (!scanResult) {
+      setScanning(true)
+      try {
+        await storeTriggerScan()
+      } finally {
+        setScanning(false)
+      }
+      const freshScan = useAppStore.getState().scanResult
+      if (freshScan) {
+        toolIds = freshScan.tools
+          .filter((t) => t.status === 'healthy' || t.status === 'degraded')
+          .map((t) => t.id)
+      } else {
+        toolIds = []
+        setNoScanWarning(true)
+      }
+    } else {
+      toolIds = installedToolIds()
+    }
+
     setCreating(true)
     await storeCreateProfile(trimmed, toolIds)
     setNewName('')
@@ -549,10 +585,10 @@ function ProfileManagerModal({ scanResult, onClose }: ProfileManagerModalProps):
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') void handleCreate(newName, installedToolIds())
+                  if (e.key === 'Enter') void handleCreateManual(newName)
                 }}
                 placeholder="Nome do perfil"
-                disabled={creating}
+                disabled={creating || scanning}
                 style={{
                   flex: 1,
                   padding: '9px 14px',
@@ -566,24 +602,30 @@ function ProfileManagerModal({ scanResult, onClose }: ProfileManagerModalProps):
                 }}
               />
               <button
-                onClick={() => void handleCreate(newName, installedToolIds())}
-                disabled={creating || !newName.trim()}
+                onClick={() => void handleCreateManual(newName)}
+                disabled={scanning || creating || !newName.trim()}
                 style={{
                   border: 'none',
                   borderRadius: 10,
                   padding: '9px 18px',
-                  background: newName.trim() && !creating ? '#2563eb' : 'rgba(148,163,184,0.2)',
-                  color: newName.trim() && !creating ? '#fff' : '#64748b',
+                  background: newName.trim() && !creating && !scanning ? '#2563eb' : 'rgba(148,163,184,0.2)',
+                  color: newName.trim() && !creating && !scanning ? '#fff' : '#64748b',
                   fontWeight: 700,
-                  cursor: creating || !newName.trim() ? 'not-allowed' : 'pointer',
+                  cursor: scanning || creating || !newName.trim() ? 'not-allowed' : 'pointer',
                   fontSize: 14,
                   whiteSpace: 'nowrap',
-                  opacity: creating ? 0.6 : 1
+                  opacity: scanning || creating ? 0.6 : 1
                 }}
               >
-                {creating ? 'Criando...' : 'Criar'}
+                {scanning ? 'Escaneando...' : creating ? 'Criando...' : 'Criar'}
               </button>
             </div>
+            {noScanWarning && (
+              <p style={{ margin: '8px 0 0', fontSize: 12, color: '#94a3b8', lineHeight: 1.5 }}>
+                Nenhum scan encontrado — perfil criado sem ferramentas pré-selecionadas. Você pode
+                adicioná-las manualmente.
+              </p>
+            )}
           </section>
 
           {/* Perfis padrão */}

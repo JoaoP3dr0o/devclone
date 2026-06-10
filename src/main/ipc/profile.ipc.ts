@@ -4,6 +4,7 @@ import type { UserProfile } from '../../shared/profiles/profile.types'
 import { createProfile } from '../../shared/profiles/userProfile.utils'
 import {
   getProfilesStore,
+  loadLastScan,
   loadUserProfile,
   saveProfilesStore,
   saveUserProfile
@@ -34,7 +35,18 @@ export function registerProfileIpc(): void {
 
   ipcMain.handle('profile:create', async (_event, name: unknown, toolIds: unknown) => {
     if (typeof name !== 'string' || !Array.isArray(toolIds)) return null
-    const validToolIds = (toolIds as unknown[]).filter((id): id is string => typeof id === 'string')
+    let validToolIds = (toolIds as unknown[]).filter((id): id is string => typeof id === 'string')
+
+    if (validToolIds.length === 0) {
+      const lastScan = await loadLastScan()
+      if (lastScan) {
+        validToolIds = lastScan.tools.tools
+          .filter((t) => t.status === 'healthy' || t.status === 'degraded')
+          .map((t) => t.id)
+        console.log('[DevClone] profile:create — toolIds empty, using last scan fallback:', validToolIds.length, 'tools')
+      }
+    }
+
     const newProfile = createProfile(name, validToolIds)
     const store = await getProfilesStore()
     await saveProfilesStore({ ...store, profiles: [...store.profiles, newProfile] })
