@@ -21,6 +21,8 @@ const electron = {
   clearScanData: () => ipcRenderer.invoke('app:clearScanData'),
   getSettings: () => ipcRenderer.invoke('app:getSettings'),
   saveSettings: (settings: { autoScan: boolean }) => ipcRenderer.invoke('app:saveSettings', settings),
+  exportProfile: () => ipcRenderer.invoke('export:profile'),
+  importProfile: () => ipcRenderer.invoke('import:profile'),
   preflight: {
     run: (toolId: string, platform: string) =>
       ipcRenderer.invoke('preflight:run', toolId, platform),

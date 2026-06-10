@@ -9,6 +9,8 @@ export type InstallOutputChunk = { type: 'stdout' | 'stderr'; text: string }
 export type InstallResult = { success: boolean; exitCode?: number; error?: string }
 export type PreflightFixResult = { success: boolean; error?: string }
 export type AppSettings = { autoScan: boolean }
+export type ExportProfileResult = { success: boolean; path?: string; error?: string; cancelled?: boolean }
+export type ImportProfileResult = { success: boolean; profile?: UserProfile; ignoredTools?: string[]; error?: string; cancelled?: boolean }
 
 type DevCloneElectronAPI = ElectronAPI & {
   scanEnvironment: () => Promise<LastScanStorage>
@@ -25,6 +27,8 @@ type DevCloneElectronAPI = ElectronAPI & {
   clearScanData: () => Promise<void>
   getSettings: () => Promise<AppSettings>
   saveSettings: (settings: AppSettings) => Promise<void>
+  exportProfile: () => Promise<ExportProfileResult>
+  importProfile: () => Promise<ImportProfileResult>
   preflight: {
     run: (toolId: string, platform: string) => Promise<PreflightResult>
     fix: (checkId: string) => Promise<PreflightFixResult>

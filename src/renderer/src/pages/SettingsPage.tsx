@@ -191,7 +191,7 @@ function ComingSoonCard({ label }: { label: string }): React.JSX.Element {
 }
 
 function SettingsPage(): React.JSX.Element {
-  const { setProfile, clearScanData } = useAppStore()
+  const { setProfile, clearScanData, loadProfile } = useAppStore()
 
   const [version, setVersion] = useState('...')
   const [platform, setPlatform] = useState('Detectando...')
@@ -202,6 +202,12 @@ function SettingsPage(): React.JSX.Element {
   const [clearDataFeedback, setClearDataFeedback] = useState<string | null>(null)
   const [resettingProfile, setResettingProfile] = useState(false)
   const [resetProfileFeedback, setResetProfileFeedback] = useState<string | null>(null)
+
+  const [exporting, setExporting] = useState(false)
+  const [exportFeedback, setExportFeedback] = useState<{ ok: boolean; message: string } | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [importFeedback, setImportFeedback] = useState<{ ok: boolean; message: string } | null>(null)
+  const [ignoredWarning, setIgnoredWarning] = useState<string | null>(null)
 
   useEffect(() => {
     window.electron.getVersion().then(setVersion).catch(() => setVersion('—'))
@@ -230,6 +236,42 @@ function SettingsPage(): React.JSX.Element {
     setResettingProfile(false)
     setResetProfileFeedback('Perfil resetado')
     setTimeout(() => setResetProfileFeedback(null), 2500)
+  }
+
+  async function handleExport(): Promise<void> {
+    setExporting(true)
+    setExportFeedback(null)
+    const result = await window.electron.exportProfile()
+    setExporting(false)
+    if (result.cancelled) return
+    if (result.success && result.path) {
+      const filename = result.path.split(/[/\\]/).pop() ?? result.path
+      setExportFeedback({ ok: true, message: `Salvo em: ${filename}` })
+      setTimeout(() => setExportFeedback(null), 2000)
+    } else if (!result.success && result.error) {
+      setExportFeedback({ ok: false, message: result.error })
+    }
+  }
+
+  async function handleImport(): Promise<void> {
+    setImporting(true)
+    setImportFeedback(null)
+    setIgnoredWarning(null)
+    const result = await window.electron.importProfile()
+    setImporting(false)
+    if (result.cancelled) return
+    if (result.success && result.profile) {
+      void loadProfile()
+      setImportFeedback({ ok: true, message: `Perfil '${result.profile.name}' carregado!` })
+      setTimeout(() => setImportFeedback(null), 2000)
+      if (result.ignoredTools && result.ignoredTools.length > 0) {
+        setIgnoredWarning(
+          `${result.ignoredTools.length} ferramenta(s) do arquivo não foram reconhecidas e foram ignoradas.`
+        )
+      }
+    } else if (!result.success && result.error) {
+      setImportFeedback({ ok: false, message: result.error })
+    }
   }
 
   async function handleAutoScanChange(value: boolean): Promise<void> {
@@ -279,13 +321,63 @@ function SettingsPage(): React.JSX.Element {
         <Row
           label="Resetar perfil"
           description="Volta ao perfil padrão: Laravel + React"
-          last
         >
           <ActionButton
             label={resettingProfile ? 'Resetando...' : (resetProfileFeedback ?? 'Resetar perfil')}
             loading={resettingProfile}
             onClick={() => void handleResetProfile()}
           />
+        </Row>
+        <Row label="Exportar perfil" description="Salva seu perfil e ambiente em um arquivo .json">
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+            <ActionButton
+              label={exporting ? 'Exportando...' : 'Exportar'}
+              loading={exporting}
+              onClick={() => void handleExport()}
+            />
+            {exportFeedback && (
+              <span
+                style={{
+                  fontSize: 11,
+                  color: exportFeedback.ok ? '#4ade80' : '#fca5a5',
+                  maxWidth: 200,
+                  textAlign: 'right'
+                }}
+              >
+                {exportFeedback.message}
+              </span>
+            )}
+          </div>
+        </Row>
+        <Row
+          label="Importar perfil"
+          description="Restaura um perfil exportado de outra máquina"
+          last
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+            <ActionButton
+              label={importing ? 'Importando...' : 'Importar'}
+              loading={importing}
+              onClick={() => void handleImport()}
+            />
+            {importFeedback && (
+              <span
+                style={{
+                  fontSize: 11,
+                  color: importFeedback.ok ? '#4ade80' : '#fca5a5',
+                  maxWidth: 200,
+                  textAlign: 'right'
+                }}
+              >
+                {importFeedback.message}
+              </span>
+            )}
+            {ignoredWarning && (
+              <span style={{ fontSize: 11, color: '#fbbf24', maxWidth: 200, textAlign: 'right' }}>
+                {ignoredWarning}
+              </span>
+            )}
+          </div>
         </Row>
       </Card>
 

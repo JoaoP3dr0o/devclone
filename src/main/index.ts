@@ -2,6 +2,8 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { registerExportIpc } from './ipc/export.ipc'
+import { registerImportIpc } from './ipc/import.ipc'
 import { registerInstallIpc } from './ipc/install.ipc'
 import { registerPlatformIpc } from './ipc/platform.ipc'
 import { registerPreflightIpc } from './ipc/preflight.ipc'
@@ -65,6 +67,8 @@ app.whenReady().then(() => {
   registerProfileIpc()
   registerPreflightIpc()
   registerSettingsIpc()
+  registerExportIpc()
+  registerImportIpc()
 
   createWindow()
 
