@@ -353,6 +353,13 @@ function ProfileManagerModal({ scanResult, onClose }: ProfileManagerModalProps):
   const [activating, setActivating] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
 
+  function installedToolIds(): string[] {
+    if (!scanResult) return []
+    return scanResult.tools
+      .filter((t) => t.status === 'healthy' || t.status === 'degraded')
+      .map((t) => t.id)
+  }
+
   async function handleCreate(name: string, toolIds: string[]): Promise<void> {
     const trimmed = name.trim()
     if (!trimmed) return
@@ -542,7 +549,7 @@ function ProfileManagerModal({ scanResult, onClose }: ProfileManagerModalProps):
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') void handleCreate(newName, [])
+                  if (e.key === 'Enter') void handleCreate(newName, installedToolIds())
                 }}
                 placeholder="Nome do perfil"
                 disabled={creating}
@@ -559,7 +566,7 @@ function ProfileManagerModal({ scanResult, onClose }: ProfileManagerModalProps):
                 }}
               />
               <button
-                onClick={() => void handleCreate(newName, [])}
+                onClick={() => void handleCreate(newName, installedToolIds())}
                 disabled={creating || !newName.trim()}
                 style={{
                   border: 'none',

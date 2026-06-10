@@ -266,6 +266,45 @@ function Home(): React.JSX.Element {
         </div>
       )}
 
+      {!hasProfile && (
+        <div
+          style={{
+            border: '1px solid rgba(147, 197, 253, 0.18)',
+            borderRadius: 14,
+            padding: '14px 18px',
+            background: 'rgba(37, 99, 235, 0.07)',
+            marginBottom: 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            flexWrap: 'wrap'
+          }}
+        >
+          <div style={{ fontSize: 14, color: '#cbd5e1' }}>
+            <span style={{ color: '#93c5fd', fontWeight: 700 }}>Perfil vazio — </span>
+            Selecione as ferramentas do seu ambiente para calcular compatibilidade e ver
+            recomendações.
+          </div>
+          <button
+            onClick={() => navigate('/profile')}
+            style={{
+              border: 'none',
+              borderRadius: 8,
+              padding: '7px 14px',
+              background: '#2563eb',
+              color: '#fff',
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontSize: 13,
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Configurar perfil
+          </button>
+        </div>
+      )}
+
       {hasProfile && (
         <section
           style={{

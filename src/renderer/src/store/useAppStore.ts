@@ -100,7 +100,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   createProfile: async (name: string, toolIds: string[]) => {
     const newProfile = await window.electron.createProfile(name, toolIds)
     if (!newProfile) return null
-    set((state) => ({ profiles: [...state.profiles, newProfile] }))
+    await get().loadAllProfiles()
     return newProfile
   },
 
