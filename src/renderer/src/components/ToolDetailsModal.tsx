@@ -6,6 +6,7 @@ import { getToolInsight, getToolInsightMessage } from '@shared/tools/insights'
 import { toolsCatalog } from '@shared/tools/catalog'
 import { mockTools } from '../data/mockTools'
 import { useEnvironmentScan } from '../hooks/useEnvironmentScan'
+import { useAppStore } from '../store/useAppStore'
 import type { DevTool, DevToolId, MissingDep } from '../types/tools'
 
 import StatusBadge from './StatusBadge'
@@ -32,6 +33,7 @@ function ToolDetailsModal({
   onOpenTool
 }: ToolDetailsModalProps): React.JSX.Element | null {
   const { scanResult, scanEnvironment } = useEnvironmentScan()
+  const userProfile = useAppStore((s) => s.userProfile)
   const [installCommand, setInstallCommand] = useState<string | null>(null)
   const [installPhase, setInstallPhase] = useState<InstallPhase>('idle')
   const [outputLog, setOutputLog] = useState<string[]>([])
@@ -90,6 +92,7 @@ function ToolDetailsModal({
   const scannedTool = scanResult?.tools.find((t) => t.id === tool.id)
   const degradedDeps: MissingDep[] =
     tool.status === 'degraded' ? (scannedTool?.missingDeps ?? []) : []
+  const isInProfile = userProfile.toolIds.includes(tool.id)
 
   async function handleFix(depId: string): Promise<void> {
     await window.electron.preflight.fix(depId)
@@ -263,6 +266,21 @@ function ToolDetailsModal({
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+
+              {isInProfile && tool.status === 'missing' && (
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: 'rgba(148,163,184,0.7)',
+                    padding: '8px 0',
+                    borderTop: '1px solid rgba(148,163,184,0.1)'
+                  }}
+                >
+                  ℹ️ Esta ferramenta faz parte do perfil{' '}
+                  <strong>{userProfile.name}</strong>{' '}
+                  mas ainda não está instalada nesta máquina.
                 </div>
               )}
 

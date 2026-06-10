@@ -10,11 +10,23 @@ import { toolsCatalog } from '@shared/tools/catalog'
 import { useActiveProfile } from '../hooks/useActiveProfile'
 import { useAppStore } from '../store/useAppStore'
 
+function formatRelativeDate(isoDate: string | undefined): string | null {
+  if (!isoDate) return null
+  const diffDays = Math.floor((Date.now() - new Date(isoDate).getTime()) / (1000 * 60 * 60 * 24))
+  if (diffDays === 0) return 'hoje'
+  if (diffDays === 1) return 'há 1 dia'
+  if (diffDays < 7) return `há ${diffDays} dias`
+  if (diffDays < 14) return 'há 1 semana'
+  if (diffDays < 30) return `há ${Math.floor(diffDays / 7)} semanas`
+  if (diffDays < 60) return 'há 1 mês'
+  return `há ${Math.floor(diffDays / 30)} meses`
+}
+
 export default function ProfilePage(): React.JSX.Element {
   const { userProfile, saveProfile, profileLoading } = useActiveProfile()
   const scanResult = useAppStore((s) => s.scanResult)
   const [nameInput, setNameInput] = useState('')
-  const [showPresetModal, setShowPresetModal] = useState(false)
+  const [showProfileManager, setShowProfileManager] = useState(false)
   const [savedIndicator, setSavedIndicator] = useState(false)
   const nameInputRef = useRef<HTMLInputElement>(null)
 
@@ -54,7 +66,6 @@ export default function ProfilePage(): React.JSX.Element {
       toolIds: preset.tools.map((t) => t.toolId)
     }
     setNameInput(preset.name)
-    setShowPresetModal(false)
     await persistProfile(newProfile)
   }
 
@@ -62,7 +73,6 @@ export default function ProfilePage(): React.JSX.Element {
 
   return (
     <section style={{ padding: 32, minWidth: 0 }}>
-      {/* Header */}
       <div
         style={{
           display: 'inline-flex',
@@ -137,7 +147,7 @@ export default function ProfilePage(): React.JSX.Element {
         </div>
 
         <button
-          onClick={() => setShowPresetModal(true)}
+          onClick={() => setShowProfileManager(true)}
           style={{
             border: '1px solid rgba(148, 163, 184, 0.24)',
             borderRadius: 10,
@@ -150,7 +160,7 @@ export default function ProfilePage(): React.JSX.Element {
             whiteSpace: 'nowrap'
           }}
         >
-          Usar perfil padrão
+          Gerenciar perfis
         </button>
       </div>
 
@@ -159,7 +169,6 @@ export default function ProfilePage(): React.JSX.Element {
         compatibilidade e recomendações.
       </p>
 
-      {/* Auto-detect banner */}
       {detectedProfile &&
         scanResult &&
         detectedProfile.name !== userProfile.name && (
@@ -200,7 +209,6 @@ export default function ProfilePage(): React.JSX.Element {
           </div>
         )}
 
-      {/* Tool list */}
       <div
         style={{
           border: '1px solid rgba(148, 163, 184, 0.16)',
@@ -301,27 +309,71 @@ export default function ProfilePage(): React.JSX.Element {
         </div>
       </div>
 
-      {/* Preset modal */}
-      {showPresetModal && (
-        <PresetModal
-          profiles={defaultProfiles}
+      {showProfileManager && (
+        <ProfileManagerModal
           scanResult={scanResult}
-          onApply={applyPreset}
-          onClose={() => setShowPresetModal(false)}
+          onClose={() => setShowProfileManager(false)}
         />
       )}
     </section>
   )
 }
 
-type PresetModalProps = {
-  profiles: EnvironmentProfile[]
+type ProfileManagerModalProps = {
   scanResult: EnvironmentScanResult | null
-  onApply: (profile: EnvironmentProfile) => void
   onClose: () => void
 }
 
-function PresetModal({ profiles, scanResult, onApply, onClose }: PresetModalProps): React.JSX.Element {
+function SectionLabel({ children }: { children: React.ReactNode }): React.JSX.Element {
+  return (
+    <div
+      style={{
+        color: '#64748b',
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        marginBottom: 10
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function ProfileManagerModal({ scanResult, onClose }: ProfileManagerModalProps): React.JSX.Element {
+  const profiles = useAppStore((s) => s.profiles)
+  const activeProfileId = useAppStore((s) => s.activeProfileId)
+  const storeCreateProfile = useAppStore((s) => s.createProfile)
+  const storeDeleteProfile = useAppStore((s) => s.deleteProfile)
+  const storeSetActiveProfile = useAppStore((s) => s.setActiveProfile)
+
+  const [newName, setNewName] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [activating, setActivating] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
+
+  async function handleCreate(name: string, toolIds: string[]): Promise<void> {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    setCreating(true)
+    await storeCreateProfile(trimmed, toolIds)
+    setNewName('')
+    setCreating(false)
+  }
+
+  async function handleActivate(id: string): Promise<void> {
+    setActivating(id)
+    await storeSetActiveProfile(id)
+    setActivating(null)
+  }
+
+  async function handleDelete(id: string): Promise<void> {
+    setDeleting(id)
+    await storeDeleteProfile(id)
+    setDeleting(null)
+  }
+
   return (
     <div
       role="presentation"
@@ -340,7 +392,7 @@ function PresetModal({ profiles, scanResult, onApply, onClose }: PresetModalProp
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Escolher perfil padrão"
+        aria-label="Gerenciar perfis"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: 'min(640px, 100%)',
@@ -348,19 +400,24 @@ function PresetModal({ profiles, scanResult, onApply, onClose }: PresetModalProp
           borderRadius: 20,
           background: 'rgba(15, 23, 42, 0.98)',
           boxShadow: '0 24px 70px rgba(0,0,0,0.42)',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          maxHeight: 'calc(100vh - 48px)',
+          display: 'flex',
+          flexDirection: 'column'
         }}
       >
+        {/* Header */}
         <div
           style={{
             padding: '18px 22px',
             borderBottom: '1px solid rgba(148, 163, 184, 0.14)',
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center'
+            alignItems: 'center',
+            flexShrink: 0
           }}
         >
-          <h2 style={{ margin: 0, fontSize: 18, color: '#e5e7eb' }}>Perfis padrão</h2>
+          <h2 style={{ margin: 0, fontSize: 18, color: '#e5e7eb' }}>Gerenciar perfis</h2>
           <button
             onClick={onClose}
             style={{
@@ -377,77 +434,241 @@ function PresetModal({ profiles, scanResult, onApply, onClose }: PresetModalProp
           </button>
         </div>
 
-        <div style={{ padding: 16, display: 'grid', gap: 10 }}>
-          {profiles.map((profile) => {
-            const compat = scanResult
-              ? calculateProfileCompatibility(scanResult, profile)
-              : null
+        {/* Body */}
+        <div style={{ padding: 16, display: 'grid', gap: 24, overflowY: 'auto' }}>
 
-            return (
-              <button
-                key={profile.id}
-                onClick={() => onApply(profile)}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr auto',
-                  gap: 12,
-                  padding: '14px 16px',
-                  border: '1px solid rgba(148, 163, 184, 0.14)',
-                  borderRadius: 14,
-                  background: 'rgba(2, 6, 23, 0.3)',
-                  color: 'inherit',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'border-color 0.15s, background 0.15s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(147, 197, 253, 0.35)'
-                  e.currentTarget.style.background = 'rgba(37, 99, 235, 0.1)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.14)'
-                  e.currentTarget.style.background = 'rgba(2, 6, 23, 0.3)'
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 700, color: '#e5e7eb', fontSize: 15 }}>
-                    {profile.name}
-                  </div>
-                  <div style={{ color: '#94a3b8', fontSize: 13, marginTop: 4 }}>
-                    {profile.description}
-                  </div>
-                  <div style={{ color: '#64748b', fontSize: 12, marginTop: 6 }}>
-                    {profile.tools.length} ferramentas ·{' '}
-                    {profile.tools.filter((t) => t.required).length} obrigatórias
-                  </div>
-                </div>
+          {/* Seus perfis */}
+          <section>
+            <SectionLabel>Seus perfis</SectionLabel>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {profiles.map((profile) => {
+                const isActive = profile.id === activeProfileId
+                const relDate = formatRelativeDate(profile.updatedAt)
+                const isActivating = activating === profile.id
+                const isDeleting = deleting === profile.id
 
-                {compat && (
+                return (
                   <div
+                    key={profile.id}
                     style={{
                       display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'flex-end',
-                      justifyContent: 'center',
-                      gap: 4,
-                      flexShrink: 0
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      padding: '12px 16px',
+                      border: `1px solid ${isActive ? 'rgba(147,197,253,0.3)' : 'rgba(148,163,184,0.14)'}`,
+                      borderRadius: 14,
+                      background: isActive ? 'rgba(37,99,235,0.08)' : 'rgba(2,6,23,0.3)'
                     }}
                   >
-                    <span
-                      style={{
-                        fontSize: 20,
-                        fontWeight: 800,
-                        color: compat.score >= 70 ? '#4ade80' : compat.score >= 40 ? '#facc15' : '#f87171'
-                      }}
-                    >
-                      {compat.score}%
-                    </span>
-                    <span style={{ fontSize: 11, color: '#64748b' }}>compatível</span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, color: '#e5e7eb', fontSize: 15 }}>
+                        {profile.name}
+                      </div>
+                      <div style={{ color: '#64748b', fontSize: 12, marginTop: 3 }}>
+                        {profile.toolIds.length}{' '}
+                        {profile.toolIds.length === 1 ? 'ferramenta' : 'ferramentas'}
+                        {relDate && ` · ${relDate}`}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
+                      {isActive ? (
+                        <span
+                          style={{
+                            padding: '3px 10px',
+                            borderRadius: 999,
+                            background: 'rgba(37,99,235,0.22)',
+                            color: '#93c5fd',
+                            fontSize: 12,
+                            fontWeight: 600
+                          }}
+                        >
+                          Perfil ativo
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => void handleActivate(profile.id)}
+                          disabled={isActivating || isDeleting}
+                          style={{
+                            border: '1px solid rgba(148,163,184,0.22)',
+                            borderRadius: 8,
+                            padding: '5px 12px',
+                            background: 'rgba(30,41,59,0.8)',
+                            color: '#cbd5e1',
+                            fontWeight: 600,
+                            cursor: isActivating ? 'not-allowed' : 'pointer',
+                            opacity: isActivating ? 0.6 : 1,
+                            fontSize: 13
+                          }}
+                        >
+                          {isActivating ? '...' : 'Ativar'}
+                        </button>
+                      )}
+
+                      {!isActive && profiles.length > 1 && (
+                        <button
+                          onClick={() => void handleDelete(profile.id)}
+                          disabled={isDeleting || isActivating}
+                          aria-label={`Remover ${profile.name}`}
+                          style={{
+                            border: '1px solid rgba(251,113,133,0.2)',
+                            borderRadius: 8,
+                            padding: '5px 8px',
+                            background: 'rgba(251,113,133,0.06)',
+                            color: '#fca5a5',
+                            fontWeight: 700,
+                            cursor: isDeleting ? 'not-allowed' : 'pointer',
+                            opacity: isDeleting ? 0.6 : 1,
+                            fontSize: 12,
+                            lineHeight: 1
+                          }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
                   </div>
-                )}
+                )
+              })}
+            </div>
+          </section>
+
+          {/* Novo perfil */}
+          <section>
+            <SectionLabel>Novo perfil</SectionLabel>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void handleCreate(newName, [])
+                }}
+                placeholder="Nome do perfil"
+                disabled={creating}
+                style={{
+                  flex: 1,
+                  padding: '9px 14px',
+                  borderRadius: 10,
+                  border: '1px solid rgba(148,163,184,0.22)',
+                  background: 'rgba(2,6,23,0.4)',
+                  color: '#e5e7eb',
+                  fontSize: 14,
+                  outline: 'none',
+                  fontFamily: 'inherit'
+                }}
+              />
+              <button
+                onClick={() => void handleCreate(newName, [])}
+                disabled={creating || !newName.trim()}
+                style={{
+                  border: 'none',
+                  borderRadius: 10,
+                  padding: '9px 18px',
+                  background: newName.trim() && !creating ? '#2563eb' : 'rgba(148,163,184,0.2)',
+                  color: newName.trim() && !creating ? '#fff' : '#64748b',
+                  fontWeight: 700,
+                  cursor: creating || !newName.trim() ? 'not-allowed' : 'pointer',
+                  fontSize: 14,
+                  whiteSpace: 'nowrap',
+                  opacity: creating ? 0.6 : 1
+                }}
+              >
+                {creating ? 'Criando...' : 'Criar'}
               </button>
-            )
-          })}
+            </div>
+          </section>
+
+          {/* Perfis padrão */}
+          <section>
+            <SectionLabel>Perfis padrão</SectionLabel>
+            <div style={{ display: 'grid', gap: 10 }}>
+              {defaultProfiles.map((preset) => {
+                const compat = scanResult
+                  ? calculateProfileCompatibility(scanResult, preset)
+                  : null
+
+                return (
+                  <button
+                    key={preset.id}
+                    onClick={() =>
+                      void handleCreate(
+                        preset.name,
+                        preset.tools.map((t) => t.toolId)
+                      )
+                    }
+                    disabled={creating}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr auto',
+                      gap: 12,
+                      padding: '14px 16px',
+                      border: '1px solid rgba(148,163,184,0.14)',
+                      borderRadius: 14,
+                      background: 'rgba(2,6,23,0.3)',
+                      color: 'inherit',
+                      cursor: creating ? 'not-allowed' : 'pointer',
+                      textAlign: 'left',
+                      transition: 'border-color 0.15s, background 0.15s',
+                      opacity: creating ? 0.6 : 1
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!creating) {
+                        e.currentTarget.style.borderColor = 'rgba(147,197,253,0.35)'
+                        e.currentTarget.style.background = 'rgba(37,99,235,0.1)'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(148,163,184,0.14)'
+                      e.currentTarget.style.background = 'rgba(2,6,23,0.3)'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 700, color: '#e5e7eb', fontSize: 15 }}>
+                        {preset.name}
+                      </div>
+                      <div style={{ color: '#94a3b8', fontSize: 13, marginTop: 4 }}>
+                        {preset.description}
+                      </div>
+                      <div style={{ color: '#64748b', fontSize: 12, marginTop: 6 }}>
+                        {preset.tools.length} ferramentas ·{' '}
+                        {preset.tools.filter((t) => t.required).length} obrigatórias
+                      </div>
+                    </div>
+
+                    {compat && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'flex-end',
+                          justifyContent: 'center',
+                          gap: 4,
+                          flexShrink: 0
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: 20,
+                            fontWeight: 800,
+                            color:
+                              compat.score >= 70
+                                ? '#4ade80'
+                                : compat.score >= 40
+                                  ? '#facc15'
+                                  : '#f87171'
+                          }}
+                        >
+                          {compat.score}%
+                        </span>
+                        <span style={{ fontSize: 11, color: '#64748b' }}>compatível</span>
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </section>
         </div>
       </div>
     </div>

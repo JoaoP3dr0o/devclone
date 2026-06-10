@@ -4,6 +4,7 @@ import type { DevTool, DevToolId } from '../types/tools'
 
 import StatusBadge from './StatusBadge'
 import ToolDetailsModal from './ToolDetailsModal'
+import { useAppStore } from '../store/useAppStore'
 
 type ToolListProps = {
   tools: DevTool[]
@@ -18,6 +19,7 @@ function getToolRowBackground(status: DevTool['status']): string {
 
 function ToolList({ tools, hasScanResult = false, onToolInstalled }: ToolListProps): React.JSX.Element {
   const [selectedTool, setSelectedTool] = useState<DevTool | null>(null)
+  const userProfile = useAppStore((s) => s.userProfile)
 
   return (
     <>
@@ -81,6 +83,20 @@ function ToolList({ tools, hasScanResult = false, onToolInstalled }: ToolListPro
                   >
                     {tool.category}
                   </span>
+                  {userProfile.toolIds.includes(tool.id) && tool.status === 'missing' && (
+                    <span
+                      style={{
+                        fontSize: 11,
+                        padding: '2px 8px',
+                        borderRadius: 4,
+                        background: 'rgba(59,130,246,0.15)',
+                        color: 'rgba(147,197,253,0.8)',
+                        marginLeft: 6
+                      }}
+                    >
+                      No perfil
+                    </span>
+                  )}
                 </div>
 
                 <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: 13 }}>
