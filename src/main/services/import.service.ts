@@ -2,8 +2,9 @@ import { dialog } from 'electron'
 import { readFile } from 'fs/promises'
 
 import type { UserProfile } from '../../shared/profiles/profile.types'
+import { createProfile } from '../../shared/profiles/userProfile.utils'
 import { toolsCatalog } from '../../shared/tools/catalog'
-import { saveUserProfile } from './storage.service'
+import { getProfilesStore, saveProfilesStore } from './storage.service'
 
 export type ImportResult =
   | { success: true; profile: UserProfile; ignoredTools: string[] }
@@ -49,12 +50,10 @@ export async function importProfile(): Promise<ImportResult> {
     (id): id is string => typeof id === 'string' && !knownIds.has(id)
   )
 
-  const profile: UserProfile = {
-    id: 'active-profile',
-    name: parsed.profile.name,
-    toolIds: validIds
-  }
+  // Create a new profile — do NOT change activeProfileId
+  const newProfile = createProfile(parsed.profile.name, validIds)
+  const store = await getProfilesStore()
+  await saveProfilesStore({ ...store, profiles: [...store.profiles, newProfile] })
 
-  await saveUserProfile(profile)
-  return { success: true, profile, ignoredTools }
+  return { success: true, profile: newProfile, ignoredTools }
 }

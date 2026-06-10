@@ -2,7 +2,7 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 import type { ToolCatalogItem } from '../shared/tools/catalog'
 import type { LastScanStorage } from '../shared/scan.types'
 import type { CurrentPlatform } from '../shared/platform/platform.types'
-import type { UserProfile } from '../shared/profiles/profile.types'
+import type { ProfilesStore, UserProfile } from '../shared/profiles/profile.types'
 import type { PreflightResult } from '../shared/tools/preflight.types'
 
 export type InstallOutputChunk = { type: 'stdout' | 'stderr'; text: string }
@@ -22,6 +22,11 @@ type DevCloneElectronAPI = ElectronAPI & {
   removeInstallListeners: () => void
   getUserProfile: () => Promise<UserProfile | null>
   saveUserProfile: (profile: UserProfile) => Promise<void>
+  getAllProfiles: () => Promise<ProfilesStore>
+  createProfile: (name: string, toolIds: string[]) => Promise<UserProfile | null>
+  deleteProfile: (id: string) => Promise<void>
+  setActiveProfile: (id: string) => Promise<void>
+  updateProfileTools: (profileId: string, toolIds: string[]) => Promise<void>
   getVersion: () => Promise<string>
   getUserDataPath: () => Promise<string>
   clearScanData: () => Promise<void>

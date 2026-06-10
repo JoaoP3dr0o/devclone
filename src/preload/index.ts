@@ -16,6 +16,13 @@ const electron = {
   removeInstallListeners: () => ipcRenderer.removeAllListeners('install:output'),
   getUserProfile: () => ipcRenderer.invoke('profile:get'),
   saveUserProfile: (profile: unknown) => ipcRenderer.invoke('profile:save', profile),
+  getAllProfiles: () => ipcRenderer.invoke('profile:get-all'),
+  createProfile: (name: string, toolIds: string[]) =>
+    ipcRenderer.invoke('profile:create', name, toolIds),
+  deleteProfile: (id: string) => ipcRenderer.invoke('profile:delete', id),
+  setActiveProfile: (id: string) => ipcRenderer.invoke('profile:set-active', id),
+  updateProfileTools: (profileId: string, toolIds: string[]) =>
+    ipcRenderer.invoke('profile:update-tools', profileId, toolIds),
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
   getUserDataPath: () => ipcRenderer.invoke('app:getUserDataPath'),
   clearScanData: () => ipcRenderer.invoke('app:clearScanData'),

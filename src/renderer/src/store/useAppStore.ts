@@ -1,43 +1,68 @@
 import { create } from 'zustand'
 
 import type { EnvironmentProfile, UserProfile } from '@shared/profiles/profile.types'
-import { DEFAULT_USER_PROFILE, userProfileToEnvironmentProfile } from '@shared/profiles/userProfile.utils'
+import { userProfileToEnvironmentProfile } from '@shared/profiles/userProfile.utils'
 import type { EnvironmentScanResult } from '@shared/scan.types'
 
+type ProfileInput = { name: string; toolIds: string[] }
+
 type AppStore = {
+  // Profile state
   userProfile: UserProfile
   environmentProfile: EnvironmentProfile
   profileLoading: boolean
+  profiles: UserProfile[]
+  activeProfileId: string
 
+  // Scan state
   scanResult: EnvironmentScanResult | null
   lastScanAt: string | null
   scanLoading: boolean
   scanError: string | null
 
+  // Profile actions
   loadProfile: () => Promise<void>
-  setProfile: (profile: UserProfile) => Promise<void>
+  setProfile: (profile: ProfileInput) => Promise<void>
+  loadAllProfiles: () => Promise<void>
+  createProfile: (name: string, toolIds: string[]) => Promise<UserProfile | null>
+  deleteProfile: (id: string) => Promise<void>
+  setActiveProfile: (id: string) => Promise<void>
+  updateProfileTools: (profileId: string, toolIds: string[]) => Promise<void>
+
+  // Scan actions
   loadLastScan: () => Promise<void>
   triggerScan: () => Promise<void>
   clearScanData: () => Promise<void>
 }
 
-export const useAppStore = create<AppStore>((set) => ({
-  userProfile: DEFAULT_USER_PROFILE,
-  environmentProfile: userProfileToEnvironmentProfile(DEFAULT_USER_PROFILE),
+const EMPTY_PROFILE: UserProfile = { id: '', name: '', toolIds: [] }
+
+export const useAppStore = create<AppStore>((set, get) => ({
+  userProfile: EMPTY_PROFILE,
+  environmentProfile: userProfileToEnvironmentProfile(EMPTY_PROFILE),
   profileLoading: true,
+  profiles: [],
+  activeProfileId: '',
 
   scanResult: null,
   lastScanAt: null,
   scanLoading: false,
   scanError: null,
 
-  loadProfile: async () => {
+  loadAllProfiles: async () => {
     try {
-      const saved = await window.electron.getUserProfile()
-      const profile = saved ?? DEFAULT_USER_PROFILE
+      const store = await window.electron.getAllProfiles()
+      const activeProfile =
+        store.profiles.find((p) => p.id === store.activeProfileId) ?? store.profiles[0]
+      if (!activeProfile) {
+        set({ profileLoading: false })
+        return
+      }
       set({
-        userProfile: profile,
-        environmentProfile: userProfileToEnvironmentProfile(profile),
+        profiles: store.profiles,
+        activeProfileId: store.activeProfileId,
+        userProfile: activeProfile,
+        environmentProfile: userProfileToEnvironmentProfile(activeProfile),
         profileLoading: false
       })
     } catch {
@@ -45,12 +70,69 @@ export const useAppStore = create<AppStore>((set) => ({
     }
   },
 
-  setProfile: async (profile: UserProfile) => {
-    set({
-      userProfile: profile,
-      environmentProfile: userProfileToEnvironmentProfile(profile)
+  loadProfile: async () => {
+    await get().loadAllProfiles()
+  },
+
+  setProfile: async (profile: ProfileInput) => {
+    const { activeProfileId, profiles } = get()
+    const existing = profiles.find((p) => p.id === activeProfileId)
+    if (!existing) return
+
+    const now = new Date().toISOString()
+    const updated: UserProfile = {
+      id: existing.id,
+      name: profile.name,
+      toolIds: profile.toolIds,
+      createdAt: existing.createdAt ?? now,
+      updatedAt: now
+    }
+
+    set((state) => ({
+      userProfile: updated,
+      environmentProfile: userProfileToEnvironmentProfile(updated),
+      profiles: state.profiles.map((p) => (p.id === activeProfileId ? updated : p))
+    }))
+
+    await window.electron.saveUserProfile(updated)
+  },
+
+  createProfile: async (name: string, toolIds: string[]) => {
+    const newProfile = await window.electron.createProfile(name, toolIds)
+    if (!newProfile) return null
+    set((state) => ({ profiles: [...state.profiles, newProfile] }))
+    return newProfile
+  },
+
+  deleteProfile: async (id: string) => {
+    await window.electron.deleteProfile(id)
+    await get().loadAllProfiles()
+  },
+
+  setActiveProfile: async (id: string) => {
+    await window.electron.setActiveProfile(id)
+    await get().loadAllProfiles()
+  },
+
+  updateProfileTools: async (profileId: string, toolIds: string[]) => {
+    await window.electron.updateProfileTools(profileId, toolIds)
+    const now = new Date().toISOString()
+    set((state) => {
+      const profiles = state.profiles.map((p) =>
+        p.id === profileId ? { ...p, toolIds, updatedAt: now } : p
+      )
+      const isActive = profileId === state.activeProfileId
+      const updatedActive = isActive ? profiles.find((p) => p.id === profileId) : undefined
+      return {
+        profiles,
+        ...(updatedActive
+          ? {
+              userProfile: updatedActive,
+              environmentProfile: userProfileToEnvironmentProfile(updatedActive)
+            }
+          : {})
+      }
     })
-    await window.electron.saveUserProfile(profile)
   },
 
   loadLastScan: async () => {
@@ -70,7 +152,8 @@ export const useAppStore = create<AppStore>((set) => ({
       const saved = await window.electron.scanEnvironment()
       set({ scanResult: saved.tools, lastScanAt: saved.lastScanAt, scanLoading: false })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Não foi possível escanear o ambiente.'
+      const message =
+        error instanceof Error ? error.message : 'Não foi possível escanear o ambiente.'
       set({ scanError: message, scanLoading: false })
     }
   },

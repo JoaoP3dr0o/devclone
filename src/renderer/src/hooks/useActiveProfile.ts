@@ -1,11 +1,13 @@
 import type { EnvironmentProfile, UserProfile } from '@shared/profiles/profile.types'
 import { useAppStore } from '../store/useAppStore'
 
+type ProfileInput = { name: string; toolIds: string[] }
+
 type UseActiveProfileResult = {
   userProfile: UserProfile
   environmentProfile: EnvironmentProfile
   profileLoading: boolean
-  saveProfile: (profile: UserProfile) => Promise<void>
+  saveProfile: (profile: ProfileInput) => Promise<void>
 }
 
 export function useActiveProfile(): UseActiveProfileResult {

@@ -11,7 +11,7 @@ import { toolsCatalog } from '@shared/tools/catalog'
 
 function StoreInitializer(): null {
   useEffect(() => {
-    void useAppStore.getState().loadProfile()
+    void useAppStore.getState().loadAllProfiles()
     window.electron
       .getSettings()
       .then((settings) => {

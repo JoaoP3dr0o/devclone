@@ -1,7 +1,5 @@
-import type { ToolCatalogItem } from '../tools/catalog'
-
 export type EnvironmentProfileTool = {
-  toolId: ToolCatalogItem['id']
+  toolId: string
   required: boolean
   minimumVersion?: string
 }
@@ -14,12 +12,15 @@ export type EnvironmentProfile = {
 }
 
 export type UserProfile = {
-  id: 'active-profile'
+  id: string
   name: string
-  toolIds: ToolCatalogItem['id'][]
+  toolIds: string[]
+  createdAt?: string
+  updatedAt?: string
 }
 
-export type SavedUserProfile = {
-  version: 1
-  profile: UserProfile
+export type ProfilesStore = {
+  version: number
+  activeProfileId: string
+  profiles: UserProfile[]
 }

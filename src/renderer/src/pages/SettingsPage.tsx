@@ -262,7 +262,7 @@ function SettingsPage(): React.JSX.Element {
     if (result.cancelled) return
     if (result.success && result.profile) {
       void loadProfile()
-      setImportFeedback({ ok: true, message: `Perfil '${result.profile.name}' carregado!` })
+      setImportFeedback({ ok: true, message: `Perfil '${result.profile.name}' importado com sucesso` })
       setTimeout(() => setImportFeedback(null), 2000)
       if (result.ignoredTools && result.ignoredTools.length > 0) {
         setIgnoredWarning(
@@ -320,7 +320,7 @@ function SettingsPage(): React.JSX.Element {
         </Row>
         <Row
           label="Resetar perfil"
-          description="Volta ao perfil padrão: Laravel + React"
+          description="Volta ao perfil padrão: Meu perfil"
         >
           <ActionButton
             label={resettingProfile ? 'Resetando...' : (resetProfileFeedback ?? 'Resetar perfil')}
