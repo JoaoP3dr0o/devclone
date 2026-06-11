@@ -53,7 +53,7 @@ function Home(): React.JSX.Element {
   const navigate = useNavigate()
   const [platformName, setPlatformName] = useState<string>('Detectando...')
   const { loading, error, scanResult, lastScanAt, scanEnvironment } = useEnvironmentScan()
-  const { environmentProfile } = useActiveProfile()
+  const { userProfile, environmentProfile } = useActiveProfile()
 
   useEffect(() => {
     window.electron
@@ -266,6 +266,25 @@ function Home(): React.JSX.Element {
         </div>
       )}
 
+      <section
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: 16,
+          marginBottom: hasProfile ? 28 : 16
+        }}
+      >
+        <StatCard label="Profile ativo" value={userProfile.name} />
+        {hasProfile && (
+          <>
+            <StatCard label="Compatibilidade" value={`${compatibility.score}%`} />
+            <StatCard label="OK" value={compatibility.healthy.length.toString()} />
+            <StatCard label="Ausentes" value={compatibility.missing.length.toString()} />
+            <StatCard label="Desatualizadas" value={compatibility.outdated.length.toString()} />
+          </>
+        )}
+      </section>
+
       {!hasProfile && (
         <div
           style={{
@@ -283,8 +302,7 @@ function Home(): React.JSX.Element {
         >
           <div style={{ fontSize: 14, color: '#cbd5e1' }}>
             <span style={{ color: '#93c5fd', fontWeight: 700 }}>Perfil vazio — </span>
-            Selecione as ferramentas do seu ambiente para calcular compatibilidade e ver
-            recomendações.
+            adicione ferramentas para calcular compatibilidade e ver recomendações.
           </div>
           <button
             onClick={() => navigate('/profile')}
@@ -303,23 +321,6 @@ function Home(): React.JSX.Element {
             Configurar perfil
           </button>
         </div>
-      )}
-
-      {hasProfile && (
-        <section
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: 16,
-            marginBottom: 28
-          }}
-        >
-          <StatCard label="Profile ativo" value={environmentProfile.name} />
-          <StatCard label="Compatibilidade" value={`${compatibility.score}%`} />
-          <StatCard label="OK" value={compatibility.healthy.length.toString()} />
-          <StatCard label="Ausentes" value={compatibility.missing.length.toString()} />
-          <StatCard label="Desatualizadas" value={compatibility.outdated.length.toString()} />
-        </section>
       )}
 
       <section
