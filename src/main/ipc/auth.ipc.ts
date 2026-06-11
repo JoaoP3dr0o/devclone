@@ -7,6 +7,7 @@ import {
   logout,
   register,
 } from '../services/auth.service'
+import { startGoogleAuth } from '../services/google-oauth.service'
 
 export function registerAuthIpc(): void {
   ipcMain.handle('auth:register', (_event, name: unknown, email: unknown, password: unknown) => {
@@ -36,6 +37,8 @@ export function registerAuthIpc(): void {
       return loginWithGoogle(code, codeVerifier, redirectUri)
     }
   )
+
+  ipcMain.handle('auth:google-start', () => startGoogleAuth())
 
   ipcMain.handle('auth:logout', () => logout())
 

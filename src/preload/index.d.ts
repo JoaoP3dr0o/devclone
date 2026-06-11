@@ -55,6 +55,7 @@ type DevCloneElectronAPI = ElectronAPI & {
     logout: () => Promise<void>
     getCurrentUser: () => Promise<{ user: User } | null>
     isAuthenticated: () => Promise<boolean>
+    googleStart: () => Promise<{ user: User }>
   }
 }
 

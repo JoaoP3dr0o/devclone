@@ -47,6 +47,7 @@ const electron = {
     logout: () => ipcRenderer.invoke('auth:logout'),
     getCurrentUser: () => ipcRenderer.invoke('auth:get-current-user'),
     isAuthenticated: () => ipcRenderer.invoke('auth:is-authenticated'),
+    googleStart: () => ipcRenderer.invoke('auth:google-start'),
   }
 }
 

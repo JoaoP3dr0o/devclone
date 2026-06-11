@@ -35,6 +35,7 @@ type AppStore = {
   loadCurrentUser: () => Promise<void>
   register: (name: string, email: string, password: string) => Promise<void>
   login: (email: string, password: string) => Promise<void>
+  loginWithGoogle: () => Promise<void>
   logout: () => Promise<void>
 
   // Profile actions
@@ -80,23 +81,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   register: async (name: string, email: string, password: string) => {
-    set({ authLoading: true })
-    try {
-      const { user } = await window.electron.auth.register(name, email, password)
-      set({ currentUser: user })
-    } finally {
-      set({ authLoading: false })
-    }
+    const { user } = await window.electron.auth.register(name, email, password)
+    set({ currentUser: user })
   },
 
   login: async (email: string, password: string) => {
-    set({ authLoading: true })
-    try {
-      const { user } = await window.electron.auth.login(email, password)
-      set({ currentUser: user })
-    } finally {
-      set({ authLoading: false })
-    }
+    const { user } = await window.electron.auth.login(email, password)
+    set({ currentUser: user })
+  },
+
+  loginWithGoogle: async () => {
+    const { user } = await window.electron.auth.googleStart()
+    set({ currentUser: user })
   },
 
   logout: async () => {

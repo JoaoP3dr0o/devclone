@@ -43,13 +43,14 @@ const inputStyle: React.CSSProperties = {
 }
 
 function AuthPage(): React.JSX.Element {
-  const { login, register } = useAppStore()
+  const { login, register, loginWithGoogle } = useAppStore()
   const [mode, setMode] = useState<Mode>('login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
 
   function validate(): string | null {
     if (mode === 'register' && name.trim().length === 0) return 'Nome é obrigatório.'
@@ -77,6 +78,18 @@ function AuthPage(): React.JSX.Element {
       setError(err instanceof Error ? err.message : 'Erro inesperado. Tente novamente.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function handleGoogle(): Promise<void> {
+    setError(null)
+    setGoogleLoading(true)
+    try {
+      await loginWithGoogle()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao autenticar com Google.')
+    } finally {
+      setGoogleLoading(false)
     }
   }
 
@@ -274,21 +287,21 @@ function AuthPage(): React.JSX.Element {
           <span style={{ flex: 1, height: 1, background: 'rgba(148, 163, 184, 0.12)' }} />
         </div>
 
-        {/* Botão Google — desabilitado até a Parte 2.5 */}
+        {/* Botão Google */}
         <button
-          disabled
-          title="Em breve"
+          onClick={() => void handleGoogle()}
+          disabled={googleLoading || submitting}
           style={{
             width: '100%',
             padding: '11px',
             background: 'rgba(30, 41, 59, 0.6)',
-            border: '1px solid rgba(148, 163, 184, 0.12)',
+            border: '1px solid rgba(148, 163, 184, 0.18)',
             borderRadius: 10,
-            color: '#475569',
+            color: googleLoading ? '#64748b' : '#cbd5e1',
             fontSize: 14,
             fontWeight: 500,
-            cursor: 'not-allowed',
-            opacity: 0.5,
+            cursor: googleLoading || submitting ? 'not-allowed' : 'pointer',
+            opacity: googleLoading || submitting ? 0.6 : 1,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -297,7 +310,7 @@ function AuthPage(): React.JSX.Element {
           }}
         >
           <GoogleIcon />
-          Continuar com Google
+          {googleLoading ? 'Aguardando Google...' : 'Continuar com Google'}
         </button>
 
         {/* Alternância de modo */}
