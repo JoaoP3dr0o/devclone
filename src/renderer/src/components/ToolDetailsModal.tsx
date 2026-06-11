@@ -23,6 +23,7 @@ type ToolDetailsModalProps = {
 
 function getStatusInsight(tool: DevTool): string {
   if (tool.status === 'pending') return 'Scan em andamento. Aguarde para ver o diagnóstico atualizado.'
+  if (tool.status === 'unverified') return 'Ferramenta não verificada neste ambiente.'
   return getToolInsightMessage(tool.id, tool.status)
 }
 

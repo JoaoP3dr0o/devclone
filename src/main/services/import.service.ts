@@ -43,7 +43,7 @@ export async function importProfile(): Promise<ImportResult> {
     return { success: false, error: 'Arquivo inválido ou corrompido' }
   }
 
-  const knownIds = new Set(toolsCatalog.map((t) => t.id))
+  const knownIds: Set<string> = new Set(toolsCatalog.map((t) => t.id))
   const rawIds = parsed.profile.toolIds
   const validIds = rawIds.filter((id): id is string => typeof id === 'string' && knownIds.has(id))
   const ignoredTools = rawIds.filter(

@@ -24,7 +24,7 @@ type DevCloneElectronAPI = ElectronAPI & {
   loadLastScan: () => Promise<LastScanStorage | null>
   getInstallCommand: (toolId: ToolCatalogItem['id']) => Promise<string | null>
   getPlatform: () => Promise<CurrentPlatform>
-  runInstallCommand: (toolId: ToolCatalogItem['id']) => Promise<InstallResult>
+  runInstallCommand: (toolId: string) => Promise<InstallResult>
   onInstallOutput: (callback: (chunk: InstallOutputChunk) => void) => void
   removeInstallListeners: () => void
   getUserProfile: () => Promise<UserProfile | null>

@@ -16,7 +16,7 @@ const missingSeverityByToolId: Partial<Record<ToolScanResult['id'], Recommendati
   bun: 'low'
 }
 
-function getProfileToolIds(profile: EnvironmentProfile): Set<ToolScanResult['id']> {
+function getProfileToolIds(profile: EnvironmentProfile): Set<string> {
   return new Set(profile.tools.map((tool) => tool.toolId))
 }
 

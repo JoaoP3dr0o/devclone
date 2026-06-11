@@ -19,7 +19,7 @@ function getToolRowBackground(status: DevTool['status']): string {
   return 'transparent'
 }
 
-function ToolList({ tools, title, compact = false, hasScanResult = false, onToolInstalled }: ToolListProps): React.JSX.Element {
+function ToolList({ tools, title, compact = false, onToolInstalled }: ToolListProps): React.JSX.Element {
   const [selectedTool, setSelectedTool] = useState<DevTool | null>(null)
   const userProfile = useAppStore((s) => s.userProfile)
 
