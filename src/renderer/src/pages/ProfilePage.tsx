@@ -347,12 +347,10 @@ function ProfileManagerModal({ scanResult, onClose }: ProfileManagerModalProps):
   const storeCreateProfile = useAppStore((s) => s.createProfile)
   const storeDeleteProfile = useAppStore((s) => s.deleteProfile)
   const storeSetActiveProfile = useAppStore((s) => s.setActiveProfile)
-  const storeTriggerScan = useAppStore((s) => s.triggerScan)
 
   const [newName, setNewName] = useState('')
+  const [pendingName, setPendingName] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
-  const [scanning, setScanning] = useState(false)
-  const [noScanWarning, setNoScanWarning] = useState(false)
   const [activating, setActivating] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
 
@@ -363,45 +361,21 @@ function ProfileManagerModal({ scanResult, onClose }: ProfileManagerModalProps):
       .map((t) => t.id)
   }
 
-  async function handleCreate(name: string, toolIds: string[]): Promise<void> {
-    const trimmed = name.trim()
+  function handleClickCreate(): void {
+    const trimmed = newName.trim()
     if (!trimmed) return
-    setCreating(true)
-    await storeCreateProfile(trimmed, toolIds)
-    setNewName('')
-    setCreating(false)
+    if (!scanResult) {
+      void handleCreate(trimmed, [])
+    } else {
+      setPendingName(trimmed)
+    }
   }
 
-  async function handleCreateManual(name: string): Promise<void> {
-    const trimmed = name.trim()
-    if (!trimmed) return
-
-    setNoScanWarning(false)
-    let toolIds: string[]
-
-    if (!scanResult) {
-      setScanning(true)
-      try {
-        await storeTriggerScan()
-      } finally {
-        setScanning(false)
-      }
-      const freshScan = useAppStore.getState().scanResult
-      if (freshScan) {
-        toolIds = freshScan.tools
-          .filter((t) => t.status === 'healthy' || t.status === 'degraded')
-          .map((t) => t.id)
-      } else {
-        toolIds = []
-        setNoScanWarning(true)
-      }
-    } else {
-      toolIds = installedToolIds()
-    }
-
+  async function handleCreate(name: string, toolIds: string[]): Promise<void> {
     setCreating(true)
-    await storeCreateProfile(trimmed, toolIds)
+    await storeCreateProfile(name, toolIds)
     setNewName('')
+    setPendingName(null)
     setCreating(false)
   }
 
@@ -580,51 +554,98 @@ function ProfileManagerModal({ scanResult, onClose }: ProfileManagerModalProps):
           {/* Novo perfil */}
           <section>
             <SectionLabel>Novo perfil</SectionLabel>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <input
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') void handleCreateManual(newName)
-                }}
-                placeholder="Nome do perfil"
-                disabled={creating || scanning}
+
+            {pendingName ? (
+              <div
                 style={{
-                  flex: 1,
-                  padding: '9px 14px',
-                  borderRadius: 10,
-                  border: '1px solid rgba(148,163,184,0.22)',
-                  background: 'rgba(2,6,23,0.4)',
-                  color: '#e5e7eb',
-                  fontSize: 14,
-                  outline: 'none',
-                  fontFamily: 'inherit'
-                }}
-              />
-              <button
-                onClick={() => void handleCreateManual(newName)}
-                disabled={scanning || creating || !newName.trim()}
-                style={{
-                  border: 'none',
-                  borderRadius: 10,
-                  padding: '9px 18px',
-                  background: newName.trim() && !creating && !scanning ? '#2563eb' : 'rgba(148,163,184,0.2)',
-                  color: newName.trim() && !creating && !scanning ? '#fff' : '#64748b',
-                  fontWeight: 700,
-                  cursor: scanning || creating || !newName.trim() ? 'not-allowed' : 'pointer',
-                  fontSize: 14,
-                  whiteSpace: 'nowrap',
-                  opacity: scanning || creating ? 0.6 : 1
+                  border: '1px solid rgba(147,197,253,0.22)',
+                  borderRadius: 12,
+                  padding: '14px 16px',
+                  background: 'rgba(37,99,235,0.07)'
                 }}
               >
-                {scanning ? 'Escaneando...' : creating ? 'Criando...' : 'Criar'}
-              </button>
-            </div>
-            {noScanWarning && (
-              <p style={{ margin: '8px 0 0', fontSize: 12, color: '#94a3b8', lineHeight: 1.5 }}>
-                Nenhum scan encontrado — perfil criado sem ferramentas pré-selecionadas. Você pode
-                adicioná-las manualmente.
-              </p>
+                <p style={{ margin: '0 0 12px', fontSize: 13, color: '#cbd5e1' }}>
+                  Como quer começar o perfil{' '}
+                  <strong style={{ color: '#e5e7eb' }}>"{pendingName}"</strong>?
+                </p>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => void handleCreate(pendingName, installedToolIds())}
+                    disabled={creating}
+                    style={{
+                      border: 'none',
+                      borderRadius: 9,
+                      padding: '8px 16px',
+                      background: creating ? 'rgba(148,163,184,0.2)' : '#2563eb',
+                      color: creating ? '#64748b' : '#fff',
+                      fontWeight: 700,
+                      cursor: creating ? 'not-allowed' : 'pointer',
+                      fontSize: 13,
+                      opacity: creating ? 0.6 : 1
+                    }}
+                  >
+                    {creating ? 'Criando...' : 'Começar com ferramentas instaladas'}
+                  </button>
+                  <button
+                    onClick={() => void handleCreate(pendingName, [])}
+                    disabled={creating}
+                    style={{
+                      border: '1px solid rgba(148,163,184,0.22)',
+                      borderRadius: 9,
+                      padding: '8px 16px',
+                      background: 'rgba(2,6,23,0.4)',
+                      color: creating ? '#64748b' : '#cbd5e1',
+                      fontWeight: 600,
+                      cursor: creating ? 'not-allowed' : 'pointer',
+                      fontSize: 13,
+                      opacity: creating ? 0.6 : 1
+                    }}
+                  >
+                    Começar vazio
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 10 }}>
+                <input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleClickCreate()
+                  }}
+                  placeholder="Nome do perfil"
+                  disabled={creating}
+                  style={{
+                    flex: 1,
+                    padding: '9px 14px',
+                    borderRadius: 10,
+                    border: '1px solid rgba(148,163,184,0.22)',
+                    background: 'rgba(2,6,23,0.4)',
+                    color: '#e5e7eb',
+                    fontSize: 14,
+                    outline: 'none',
+                    fontFamily: 'inherit'
+                  }}
+                />
+                <button
+                  onClick={handleClickCreate}
+                  disabled={creating || !newName.trim()}
+                  style={{
+                    border: 'none',
+                    borderRadius: 10,
+                    padding: '9px 18px',
+                    background: newName.trim() && !creating ? '#2563eb' : 'rgba(148,163,184,0.2)',
+                    color: newName.trim() && !creating ? '#fff' : '#64748b',
+                    fontWeight: 700,
+                    cursor: creating || !newName.trim() ? 'not-allowed' : 'pointer',
+                    fontSize: 14,
+                    whiteSpace: 'nowrap',
+                    opacity: creating ? 0.6 : 1
+                  }}
+                >
+                  {creating ? 'Criando...' : 'Criar'}
+                </button>
+              </div>
             )}
           </section>
 
