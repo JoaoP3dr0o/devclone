@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
+import StatusBadge from '../components/StatusBadge'
 import { calculateProfileCompatibility, detectBestProfile } from '@shared/profiles/compatibility'
 import { defaultProfiles } from '@shared/profiles/defaultProfiles'
 import type { EnvironmentProfile, UserProfile } from '@shared/profiles/profile.types'
@@ -23,8 +25,11 @@ function formatRelativeDate(isoDate: string | undefined): string | null {
 }
 
 export default function ProfilePage(): React.JSX.Element {
+  const navigate = useNavigate()
   const { userProfile, saveProfile, profileLoading } = useActiveProfile()
   const scanResult = useAppStore((s) => s.scanResult)
+  const activeProfileId = useAppStore((s) => s.activeProfileId)
+  const updateProfileTools = useAppStore((s) => s.updateProfileTools)
   const [nameInput, setNameInput] = useState('')
   const [showProfileManager, setShowProfileManager] = useState(false)
   const [savedIndicator, setSavedIndicator] = useState(false)
@@ -52,13 +57,6 @@ export default function ProfilePage(): React.JSX.Element {
     }
   }
 
-  function toggleTool(toolId: UserProfile['toolIds'][number]): void {
-    const newToolIds = userProfile.toolIds.includes(toolId)
-      ? userProfile.toolIds.filter((id) => id !== toolId)
-      : [...userProfile.toolIds, toolId]
-    persistProfile({ ...userProfile, toolIds: newToolIds })
-  }
-
   async function applyPreset(preset: EnvironmentProfile): Promise<void> {
     const newProfile: UserProfile = {
       id: 'active-profile',
@@ -68,8 +66,6 @@ export default function ProfilePage(): React.JSX.Element {
     setNameInput(preset.name)
     await persistProfile(newProfile)
   }
-
-  const checkedCount = userProfile.toolIds.length
 
   return (
     <section style={{ padding: 32, minWidth: 0 }}>
@@ -165,8 +161,7 @@ export default function ProfilePage(): React.JSX.Element {
       </div>
 
       <p style={{ color: '#94a3b8', fontSize: 14, marginTop: 0, marginBottom: 24 }}>
-        Clique no nome para editar. As ferramentas marcadas são usadas no cálculo de
-        compatibilidade e recomendações.
+        Clique no nome para editar. Gerencie as ferramentas do perfil em Ferramentas.
       </p>
 
       {detectedProfile &&
@@ -229,84 +224,102 @@ export default function ProfilePage(): React.JSX.Element {
         >
           <h2 style={{ margin: 0, fontSize: 16 }}>Ferramentas incluídas no perfil</h2>
           <span style={{ color: '#94a3b8', fontSize: 13 }}>
-            {checkedCount} de {toolsCatalog.length} selecionadas
+            {userProfile.toolIds.length}{' '}
+            {userProfile.toolIds.length === 1 ? 'ferramenta' : 'ferramentas'} no perfil
           </span>
         </div>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))'
-          }}
-        >
-          {toolsCatalog.map((tool) => {
-            const checked = userProfile.toolIds.includes(tool.id)
+        {userProfile.toolIds.length === 0 ? (
+          <div
+            style={{
+              padding: '40px 24px',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 16
+            }}
+          >
+            <p style={{ color: '#64748b', fontSize: 14, margin: 0 }}>
+              Nenhuma ferramenta no perfil.
+              <br />
+              Vá em Ferramentas para adicionar.
+            </p>
+            <button
+              onClick={() => navigate('/tools')}
+              style={{
+                border: 'none',
+                borderRadius: 10,
+                padding: '9px 18px',
+                background: '#2563eb',
+                color: '#fff',
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontSize: 14
+              }}
+            >
+              Ir para Ferramentas
+            </button>
+          </div>
+        ) : (
+          userProfile.toolIds.map((toolId) => {
+            const catalogEntry = toolsCatalog.find((c) => c.id === toolId)
+            const scanned = scanResult?.tools.find((t) => t.id === toolId)
+            const status = scanned?.status ?? 'unverified'
+            const name = catalogEntry?.name ?? toolId
+            const category = catalogEntry?.category ?? ''
             return (
-              <label
-                key={tool.id}
+              <div
+                key={toolId}
                 style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 14,
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(0, 1fr) auto',
+                  gap: 16,
                   padding: '14px 20px',
                   borderBottom: '1px solid rgba(148, 163, 184, 0.08)',
-                  cursor: 'pointer',
-                  background: checked ? 'rgba(37, 99, 235, 0.06)' : 'transparent',
-                  transition: 'background 0.1s'
+                  alignItems: 'center'
                 }}
               >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggleTool(tool.id)}
-                  style={{
-                    marginTop: 3,
-                    width: 16,
-                    height: 16,
-                    accentColor: '#2563eb',
-                    cursor: 'pointer',
-                    flexShrink: 0
-                  }}
-                />
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      flexWrap: 'wrap'
-                    }}
-                  >
-                    <span style={{ fontWeight: 700, color: checked ? '#e5e7eb' : '#94a3b8' }}>
-                      {tool.name}
-                    </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <strong style={{ color: '#e5e7eb' }}>{name}</strong>
+                  {category && (
                     <span
                       style={{
-                        color: '#64748b',
-                        background: 'rgba(148, 163, 184, 0.1)',
+                        color: '#94a3b8',
+                        background: 'rgba(148, 163, 184, 0.12)',
                         borderRadius: 999,
-                        padding: '2px 7px',
-                        fontSize: 11
+                        padding: '3px 8px',
+                        fontSize: 12
                       }}
                     >
-                      {tool.category}
+                      {category}
                     </span>
-                  </div>
-                  <p
-                    style={{
-                      margin: '3px 0 0',
-                      color: '#64748b',
-                      fontSize: 12,
-                      lineHeight: 1.5
-                    }}
-                  >
-                    {tool.description}
-                  </p>
+                  )}
+                  <StatusBadge status={status} />
                 </div>
-              </label>
+                <button
+                  onClick={() => {
+                    const newToolIds = userProfile.toolIds.filter((id) => id !== toolId)
+                    void updateProfileTools(activeProfileId, newToolIds)
+                  }}
+                  style={{
+                    border: '1px solid rgba(251, 113, 133, 0.2)',
+                    borderRadius: 8,
+                    padding: '5px 10px',
+                    background: 'rgba(251, 113, 133, 0.06)',
+                    color: '#fca5a5',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  Remover
+                </button>
+              </div>
             )
-          })}
-        </div>
+          })
+        )}
       </div>
 
       {showProfileManager && (
