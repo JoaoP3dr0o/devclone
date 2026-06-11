@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { HashRouter, Route, Routes } from 'react-router-dom'
 
 import Layout from './components/Layout'
+import AuthPage from './pages/AuthPage'
 import Home from './pages/Home'
 import ProfilePage from './pages/ProfilePage'
 import SettingsPage from './pages/SettingsPage'
@@ -9,6 +10,10 @@ import ToolsPage from './pages/ToolsPage'
 import { useAppStore } from './store/useAppStore'
 import { toolsCatalog } from '@shared/tools/catalog'
 
+const APP_FONT =
+  'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+
+// Inicializa dados locais (perfis + scan) — só roda quando autenticado
 function StoreInitializer(): null {
   useEffect(() => {
     void useAppStore.getState().loadAllProfiles()
@@ -120,7 +125,42 @@ function PendingInstallsBanner(): React.JSX.Element | null {
   )
 }
 
+function AuthLoadingScreen(): React.JSX.Element {
+  return (
+    <div
+      style={{
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background:
+          'radial-gradient(circle at top left, rgba(37, 99, 235, 0.18), transparent 32%), #080d18',
+        color: '#475569',
+        fontFamily: APP_FONT,
+        fontSize: 14,
+      }}
+    >
+      Verificando sessão...
+    </div>
+  )
+}
+
 function App(): React.JSX.Element {
+  const currentUser = useAppStore((s) => s.currentUser)
+  const authLoading = useAppStore((s) => s.authLoading)
+
+  useEffect(() => {
+    void useAppStore.getState().loadCurrentUser()
+  }, [])
+
+  if (authLoading) {
+    return <AuthLoadingScreen />
+  }
+
+  if (!currentUser) {
+    return <AuthPage />
+  }
+
   return (
     <HashRouter>
       <StoreInitializer />

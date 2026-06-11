@@ -56,7 +56,7 @@ const EMPTY_PROFILE: UserProfile = { id: '', name: '', toolIds: [] }
 
 export const useAppStore = create<AppStore>((set, get) => ({
   currentUser: null,
-  authLoading: false,
+  authLoading: true,
 
   userProfile: EMPTY_PROFILE,
   environmentProfile: userProfileToEnvironmentProfile(EMPTY_PROFILE),

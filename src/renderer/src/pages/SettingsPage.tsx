@@ -191,13 +191,14 @@ function ComingSoonCard({ label }: { label: string }): React.JSX.Element {
 }
 
 function SettingsPage(): React.JSX.Element {
-  const { setProfile, clearScanData, loadProfile } = useAppStore()
+  const { setProfile, clearScanData, loadProfile, currentUser, logout } = useAppStore()
 
   const [version, setVersion] = useState('...')
   const [platform, setPlatform] = useState('Detectando...')
   const [dataPath, setDataPath] = useState('...')
   const [settings, setSettings] = useState<AppSettings>({ autoScan: true })
 
+  const [loggingOut, setLoggingOut] = useState(false)
   const [clearingData, setClearingData] = useState(false)
   const [clearDataFeedback, setClearDataFeedback] = useState<string | null>(null)
   const [resettingProfile, setResettingProfile] = useState(false)
@@ -221,6 +222,15 @@ function SettingsPage(): React.JSX.Element {
       .then(setSettings)
       .catch(() => {})
   }, [])
+
+  async function handleLogout(): Promise<void> {
+    setLoggingOut(true)
+    try {
+      await logout()
+    } finally {
+      setLoggingOut(false)
+    }
+  }
 
   async function handleClearData(): Promise<void> {
     setClearingData(true)
@@ -288,6 +298,23 @@ function SettingsPage(): React.JSX.Element {
       <p style={{ color: '#64748b', fontSize: 14, margin: '0 0 36px' }}>
         Preferências locais do DevClone
       </p>
+
+      {/* Conta */}
+      <SectionHeader title="Conta" />
+      <Card>
+        <Row
+          label={currentUser?.name ?? ''}
+          description={currentUser?.email ?? ''}
+          last
+        >
+          <ActionButton
+            label={loggingOut ? 'Saindo...' : 'Sair'}
+            loading={loggingOut}
+            variant="danger"
+            onClick={() => void handleLogout()}
+          />
+        </Row>
+      </Card>
 
       {/* Sobre o app */}
       <SectionHeader title="Sobre o app" />
@@ -396,7 +423,6 @@ function SettingsPage(): React.JSX.Element {
       {/* Em breve */}
       <SectionHeader title="Em breve" />
       <div style={{ display: 'grid', gap: 8 }}>
-        <ComingSoonCard label="Login e conta" />
         <ComingSoonCard label="Cloud Sync" />
         <ComingSoonCard label="Múltiplos perfis" />
         <ComingSoonCard label="Compartilhar perfil" />
