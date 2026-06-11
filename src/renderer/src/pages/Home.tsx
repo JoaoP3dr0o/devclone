@@ -161,7 +161,21 @@ function Home(): React.JSX.Element {
     version: getToolScanVersion(tool, scanResult)
   }))
 
-  const displayedTools = hasProfile ? tools : tools.filter((t) => t.status !== 'missing')
+  const profileToolSet = new Set(userProfile.toolIds)
+
+  const profileTools = tools
+    .filter((t) => profileToolSet.has(t.id))
+    .sort((a, b) => {
+      const aOk = a.status === 'healthy' || a.status === 'degraded'
+      const bOk = b.status === 'healthy' || b.status === 'degraded'
+      if (aOk && !bOk) return -1
+      if (!aOk && bOk) return 1
+      return 0
+    })
+
+  const otherTools = tools.filter(
+    (t) => !profileToolSet.has(t.id) && t.status !== 'missing' && t.status !== 'unsupported'
+  )
 
   const compatibility = calculateProfileCompatibility(scanResult, environmentProfile)
   const recommendations = generateEnvironmentRecommendations(scanResult, environmentProfile)
@@ -333,11 +347,25 @@ function Home(): React.JSX.Element {
           minWidth: 0
         }}
       >
-        <ToolList
-          tools={displayedTools}
-          hasScanResult={true}
-          onToolInstalled={scanEnvironment}
-        />
+        <div style={{ display: 'grid', gap: 18, minWidth: 0 }}>
+          {profileTools.length > 0 && (
+            <ToolList
+              title="No seu perfil"
+              tools={profileTools}
+              hasScanResult={true}
+              onToolInstalled={scanEnvironment}
+            />
+          )}
+          {otherTools.length > 0 && (
+            <ToolList
+              title="Outras instaladas"
+              compact
+              tools={otherTools}
+              hasScanResult={true}
+              onToolInstalled={scanEnvironment}
+            />
+          )}
+        </div>
         {hasProfile && (
           <div style={{ display: 'grid', gap: 18 }}>
             <RecommendationsPanel recommendations={recommendations} />

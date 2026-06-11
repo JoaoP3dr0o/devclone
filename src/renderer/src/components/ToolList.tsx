@@ -8,6 +8,8 @@ import { useAppStore } from '../store/useAppStore'
 
 type ToolListProps = {
   tools: DevTool[]
+  title?: string
+  compact?: boolean
   hasScanResult?: boolean
   onToolInstalled?: () => void
 }
@@ -17,7 +19,7 @@ function getToolRowBackground(status: DevTool['status']): string {
   return 'transparent'
 }
 
-function ToolList({ tools, hasScanResult = false, onToolInstalled }: ToolListProps): React.JSX.Element {
+function ToolList({ tools, title, compact = false, hasScanResult = false, onToolInstalled }: ToolListProps): React.JSX.Element {
   const [selectedTool, setSelectedTool] = useState<DevTool | null>(null)
   const userProfile = useAppStore((s) => s.userProfile)
 
@@ -42,10 +44,21 @@ function ToolList({ tools, hasScanResult = false, onToolInstalled }: ToolListPro
           }}
         >
           <div>
-            <h2 style={{ margin: 0, fontSize: 18 }}>Ferramentas do seu ambiente</h2>
-            <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: 13 }}>
-              Resultado do último scan — clique para detalhes
-            </p>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: compact ? 14 : 18,
+                color: compact ? '#94a3b8' : '#e5e7eb',
+                fontWeight: compact ? 600 : 700
+              }}
+            >
+              {title ?? 'Ferramentas do seu ambiente'}
+            </h2>
+            {!compact && (
+              <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: 13 }}>
+                Resultado do último scan — clique para detalhes
+              </p>
+            )}
           </div>
         </div>
 
