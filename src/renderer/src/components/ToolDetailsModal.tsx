@@ -34,6 +34,8 @@ function ToolDetailsModal({
 }: ToolDetailsModalProps): React.JSX.Element | null {
   const { scanResult, scanEnvironment } = useEnvironmentScan()
   const userProfile = useAppStore((s) => s.userProfile)
+  const activeProfileId = useAppStore((s) => s.activeProfileId)
+  const updateProfileTools = useAppStore((s) => s.updateProfileTools)
   const [installCommand, setInstallCommand] = useState<string | null>(null)
   const [installPhase, setInstallPhase] = useState<InstallPhase>('idle')
   const [outputLog, setOutputLog] = useState<string[]>([])
@@ -195,21 +197,44 @@ function ToolDetailsModal({
             <div style={{ color: '#94a3b8', fontSize: 13, marginTop: 6 }}>{tool.category}</div>
           </div>
 
-          <button
-            onClick={onClose}
-            style={{
-              border: '1px solid rgba(148, 163, 184, 0.22)',
-              borderRadius: 10,
-              background: 'rgba(15, 23, 42, 0.8)',
-              color: '#e5e7eb',
-              cursor: 'pointer',
-              fontWeight: 700,
-              padding: '8px 10px',
-              flexShrink: 0
-            }}
-          >
-            Fechar
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button
+              onClick={() => {
+                const newToolIds = isInProfile
+                  ? userProfile.toolIds.filter((id) => id !== tool.id)
+                  : [...userProfile.toolIds, tool.id]
+                void updateProfileTools(activeProfileId, newToolIds)
+              }}
+              style={{
+                border: isInProfile ? 'none' : '1px solid rgba(148,163,184,0.22)',
+                borderRadius: 10,
+                background: isInProfile ? '#2563eb' : 'transparent',
+                color: isInProfile ? '#fff' : '#94a3b8',
+                cursor: 'pointer',
+                fontWeight: 700,
+                padding: '8px 12px',
+                fontSize: 13,
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {isInProfile ? '✓ No perfil' : '+ Adicionar ao perfil'}
+            </button>
+            <button
+              onClick={onClose}
+              style={{
+                border: '1px solid rgba(148, 163, 184, 0.22)',
+                borderRadius: 10,
+                background: 'rgba(15, 23, 42, 0.8)',
+                color: '#e5e7eb',
+                cursor: 'pointer',
+                fontWeight: 700,
+                padding: '8px 10px',
+                flexShrink: 0
+              }}
+            >
+              Fechar
+            </button>
+          </div>
         </div>
 
         {/* Body */}

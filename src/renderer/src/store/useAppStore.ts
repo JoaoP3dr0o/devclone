@@ -115,7 +115,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   updateProfileTools: async (profileId: string, toolIds: string[]) => {
-    await window.electron.updateProfileTools(profileId, toolIds)
     const now = new Date().toISOString()
     set((state) => {
       const profiles = state.profiles.map((p) =>
@@ -133,6 +132,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           : {})
       }
     })
+    await window.electron.updateProfileTools(profileId, toolIds)
   },
 
   loadLastScan: async () => {

@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import StatusBadge from '../components/StatusBadge'
 import ToolDetailsModal from '../components/ToolDetailsModal'
 import { mockTools } from '../data/mockTools'
-import { useActiveProfile } from '../hooks/useActiveProfile'
 import { useEnvironmentScan } from '../hooks/useEnvironmentScan'
+import { useAppStore } from '../store/useAppStore'
 import { toolsCatalog } from '@shared/tools/catalog'
+import type { PlatformId } from '@shared/platform/platform.types'
 import type { EnvironmentScanResult } from '@shared/scan.types'
 import type { DevTool, ToolStatus } from '../types/tools'
 
@@ -46,13 +47,22 @@ const STATUS_FILTERS: { label: string; value: ToolStatus }[] = [
 
 function ToolsPage(): React.JSX.Element {
   const { loading, scanResult, scanEnvironment } = useEnvironmentScan()
-  const { environmentProfile } = useActiveProfile()
+  const userProfile = useAppStore((s) => s.userProfile)
+  const activeProfileId = useAppStore((s) => s.activeProfileId)
+  const updateProfileTools = useAppStore((s) => s.updateProfileTools)
   const [selectedTool, setSelectedTool] = useState<DevTool | null>(null)
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<ToolStatus | null>(null)
+  const [platformId, setPlatformId] = useState<PlatformId | null>(null)
 
-  const profileToolIds = new Set(environmentProfile.tools.map((t) => t.toolId))
+  useEffect(() => {
+    window.electron.getPlatform()
+      .then((p) => setPlatformId(p.id))
+      .catch(() => {})
+  }, [])
+
+  const profileToolIds = new Set(userProfile.toolIds)
 
   const tools = mockTools.map((tool) => ({
     ...tool,
@@ -60,7 +70,14 @@ function ToolsPage(): React.JSX.Element {
     version: getToolScanVersion(tool, scanResult)
   }))
 
-  const filtered = tools.filter((tool) => {
+  const platformTools = platformId
+    ? tools.filter((tool) => {
+        const entry = toolsCatalog.find((c) => c.id === tool.id)
+        return !entry || entry.supportedPlatforms.includes(platformId)
+      })
+    : tools
+
+  const filtered = platformTools.filter((tool) => {
     const matchesSearch =
       search === '' || tool.name.toLowerCase().includes(search.toLowerCase())
     const matchesCategory = categoryFilter === null || tool.category === categoryFilter
@@ -296,6 +313,28 @@ function ToolsPage(): React.JSX.Element {
                     <span style={{ color: '#94a3b8', fontSize: 13 }}>{tool.version}</span>
                   )}
                   <StatusBadge status={tool.status} />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      const newToolIds = isInProfile
+                        ? userProfile.toolIds.filter((id) => id !== tool.id)
+                        : [...userProfile.toolIds, tool.id]
+                      void updateProfileTools(activeProfileId, newToolIds)
+                    }}
+                    style={{
+                      border: isInProfile ? 'none' : '1px solid rgba(148,163,184,0.3)',
+                      borderRadius: 8,
+                      padding: '4px 10px',
+                      background: isInProfile ? '#2563eb' : 'transparent',
+                      color: isInProfile ? '#fff' : '#94a3b8',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {isInProfile ? '✓ Perfil' : '+ Perfil'}
+                  </button>
                 </div>
               </button>
             )
