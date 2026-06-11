@@ -33,11 +33,11 @@ export function registerProfileIpc(): void {
 
   ipcMain.handle('profile:get-all', () => getProfilesStore())
 
-  ipcMain.handle('profile:create', async (_event, name: unknown, toolIds: unknown) => {
+  ipcMain.handle('profile:create', async (_event, name: unknown, toolIds: unknown, startEmpty: unknown) => {
     if (typeof name !== 'string' || !Array.isArray(toolIds)) return null
     let validToolIds = (toolIds as unknown[]).filter((id): id is string => typeof id === 'string')
 
-    if (validToolIds.length === 0) {
+    if (validToolIds.length === 0 && startEmpty !== true) {
       const lastScan = await loadLastScan()
       if (lastScan) {
         validToolIds = lastScan.tools.tools

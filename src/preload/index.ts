@@ -17,8 +17,8 @@ const electron = {
   getUserProfile: () => ipcRenderer.invoke('profile:get'),
   saveUserProfile: (profile: unknown) => ipcRenderer.invoke('profile:save', profile),
   getAllProfiles: () => ipcRenderer.invoke('profile:get-all'),
-  createProfile: (name: string, toolIds: string[]) =>
-    ipcRenderer.invoke('profile:create', name, toolIds),
+  createProfile: (name: string, toolIds: string[], startEmpty?: boolean) =>
+    ipcRenderer.invoke('profile:create', name, toolIds, startEmpty),
   deleteProfile: (id: string) => ipcRenderer.invoke('profile:delete', id),
   setActiveProfile: (id: string) => ipcRenderer.invoke('profile:set-active', id),
   updateProfileTools: (profileId: string, toolIds: string[]) =>

@@ -24,7 +24,7 @@ type AppStore = {
   loadProfile: () => Promise<void>
   setProfile: (profile: ProfileInput) => Promise<void>
   loadAllProfiles: () => Promise<void>
-  createProfile: (name: string, toolIds: string[]) => Promise<UserProfile | null>
+  createProfile: (name: string, toolIds: string[], startEmpty?: boolean) => Promise<UserProfile | null>
   deleteProfile: (id: string) => Promise<void>
   setActiveProfile: (id: string) => Promise<void>
   updateProfileTools: (profileId: string, toolIds: string[]) => Promise<void>
@@ -97,8 +97,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await window.electron.saveUserProfile(updated)
   },
 
-  createProfile: async (name: string, toolIds: string[]) => {
-    const newProfile = await window.electron.createProfile(name, toolIds)
+  createProfile: async (name: string, toolIds: string[], startEmpty?: boolean) => {
+    const newProfile = await window.electron.createProfile(name, toolIds, startEmpty)
     if (!newProfile) return null
     await get().loadAllProfiles()
     return newProfile

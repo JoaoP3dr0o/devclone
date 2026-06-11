@@ -371,9 +371,9 @@ function ProfileManagerModal({ scanResult, onClose }: ProfileManagerModalProps):
     }
   }
 
-  async function handleCreate(name: string, toolIds: string[]): Promise<void> {
+  async function handleCreate(name: string, toolIds: string[], startEmpty?: boolean): Promise<void> {
     setCreating(true)
-    await storeCreateProfile(name, toolIds)
+    await storeCreateProfile(name, toolIds, startEmpty)
     setNewName('')
     setPendingName(null)
     setCreating(false)
@@ -570,7 +570,7 @@ function ProfileManagerModal({ scanResult, onClose }: ProfileManagerModalProps):
                 </p>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <button
-                    onClick={() => void handleCreate(pendingName, installedToolIds())}
+                    onClick={() => void handleCreate(pendingName, installedToolIds(), false)}
                     disabled={creating}
                     style={{
                       border: 'none',
@@ -587,7 +587,7 @@ function ProfileManagerModal({ scanResult, onClose }: ProfileManagerModalProps):
                     {creating ? 'Criando...' : 'Começar com ferramentas instaladas'}
                   </button>
                   <button
-                    onClick={() => void handleCreate(pendingName, [])}
+                    onClick={() => void handleCreate(pendingName, [], true)}
                     disabled={creating}
                     style={{
                       border: '1px solid rgba(148,163,184,0.22)',
