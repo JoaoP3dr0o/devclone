@@ -37,6 +37,16 @@ const electron = {
     savePending: (toolId: string) => ipcRenderer.invoke('preflight:save-pending', toolId),
     getPending: () => ipcRenderer.invoke('preflight:get-pending'),
     clearPending: () => ipcRenderer.invoke('preflight:clear-pending')
+  },
+  auth: {
+    register: (name: string, email: string, password: string) =>
+      ipcRenderer.invoke('auth:register', name, email, password),
+    login: (email: string, password: string) => ipcRenderer.invoke('auth:login', email, password),
+    google: (code: string, codeVerifier: string, redirectUri: string) =>
+      ipcRenderer.invoke('auth:google', code, codeVerifier, redirectUri),
+    logout: () => ipcRenderer.invoke('auth:logout'),
+    getCurrentUser: () => ipcRenderer.invoke('auth:get-current-user'),
+    isAuthenticated: () => ipcRenderer.invoke('auth:is-authenticated'),
   }
 }
 

@@ -6,7 +6,18 @@ import type { EnvironmentScanResult } from '@shared/scan.types'
 
 type ProfileInput = { name: string; toolIds: string[] }
 
+type User = {
+  id: string
+  email: string
+  name: string
+  avatarUrl?: string
+}
+
 type AppStore = {
+  // Auth state
+  currentUser: User | null
+  authLoading: boolean
+
   // Profile state
   userProfile: UserProfile
   environmentProfile: EnvironmentProfile
@@ -19,6 +30,12 @@ type AppStore = {
   lastScanAt: string | null
   scanLoading: boolean
   scanError: string | null
+
+  // Auth actions
+  loadCurrentUser: () => Promise<void>
+  register: (name: string, email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<void>
+  logout: () => Promise<void>
 
   // Profile actions
   loadProfile: () => Promise<void>
@@ -38,6 +55,9 @@ type AppStore = {
 const EMPTY_PROFILE: UserProfile = { id: '', name: '', toolIds: [] }
 
 export const useAppStore = create<AppStore>((set, get) => ({
+  currentUser: null,
+  authLoading: false,
+
   userProfile: EMPTY_PROFILE,
   environmentProfile: userProfileToEnvironmentProfile(EMPTY_PROFILE),
   profileLoading: true,
@@ -48,6 +68,41 @@ export const useAppStore = create<AppStore>((set, get) => ({
   lastScanAt: null,
   scanLoading: false,
   scanError: null,
+
+  loadCurrentUser: async () => {
+    set({ authLoading: true })
+    try {
+      const result = await window.electron.auth.getCurrentUser()
+      set({ currentUser: result?.user ?? null })
+    } finally {
+      set({ authLoading: false })
+    }
+  },
+
+  register: async (name: string, email: string, password: string) => {
+    set({ authLoading: true })
+    try {
+      const { user } = await window.electron.auth.register(name, email, password)
+      set({ currentUser: user })
+    } finally {
+      set({ authLoading: false })
+    }
+  },
+
+  login: async (email: string, password: string) => {
+    set({ authLoading: true })
+    try {
+      const { user } = await window.electron.auth.login(email, password)
+      set({ currentUser: user })
+    } finally {
+      set({ authLoading: false })
+    }
+  },
+
+  logout: async () => {
+    await window.electron.auth.logout()
+    set({ currentUser: null })
+  },
 
   loadAllProfiles: async () => {
     try {

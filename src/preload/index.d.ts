@@ -1,4 +1,11 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
+
+export interface User {
+  id: string
+  email: string
+  name: string
+  avatarUrl?: string
+}
 import type { ToolCatalogItem } from '../shared/tools/catalog'
 import type { LastScanStorage } from '../shared/scan.types'
 import type { CurrentPlatform } from '../shared/platform/platform.types'
@@ -40,6 +47,14 @@ type DevCloneElectronAPI = ElectronAPI & {
     savePending: (toolId: string) => Promise<void>
     getPending: () => Promise<string[]>
     clearPending: () => Promise<void>
+  }
+  auth: {
+    register: (name: string, email: string, password: string) => Promise<{ user: User }>
+    login: (email: string, password: string) => Promise<{ user: User }>
+    google: (code: string, codeVerifier: string, redirectUri: string) => Promise<{ user: User }>
+    logout: () => Promise<void>
+    getCurrentUser: () => Promise<{ user: User } | null>
+    isAuthenticated: () => Promise<boolean>
   }
 }
 
