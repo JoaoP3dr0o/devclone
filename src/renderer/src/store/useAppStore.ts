@@ -182,7 +182,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   setActiveProfile: async (id: string) => {
-    console.log('[DevClone] store:setActiveProfile — id:', id)
     try {
       await window.electron.cloudProfile.activate(id)
     } catch (error) {

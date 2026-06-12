@@ -28,12 +28,7 @@ export function registerCloudProfileIpc(): void {
   })
 
   ipcMain.handle('cloud-profile:activate', async (_event, id: unknown) => {
-    console.log('[DevClone] cloud-profile:activate — id:', id)
-    if (typeof id !== 'string') {
-      console.error('[DevClone] cloud-profile:activate — id is not a string:', id)
-      return
-    }
+    if (typeof id !== 'string') return
     await profileService.activateProfile(id)
-    console.log('[DevClone] cloud-profile:activate — done')
   })
 }
