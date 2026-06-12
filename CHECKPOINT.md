@@ -1,15 +1,15 @@
 # DevClone — Checkpoint
 
-**Data:** 2026-06-10
+**Data:** 2026-06-11
 **Branch:** main
-**Último commit:** `ba6e25d feat(profiles): add multi-profile manager UI with preset and create flow`
-**Remote:** pendente de push
+**Último commit:** `6041267 feat(auth): implement google oauth with pkce flow`
+**Remote:** sincronizado com origin/main
 
 ---
 
 ## Estado atual do projeto
 
-O DevClone é um app Electron + React + TypeScript que escaneia ferramentas de desenvolvimento instaladas na máquina, calcula compatibilidade com um perfil de stack personalizável e gera recomendações.
+O DevClone é um app Electron + React + TypeScript que escaneia ferramentas de desenvolvimento instaladas na máquina, calcula compatibilidade com um perfil de stack personalizável e gera recomendações. O app agora requer autenticação e se integra com uma API REST externa.
 
 ### O que está funcionando
 
@@ -32,7 +32,7 @@ O DevClone é um app Electron + React + TypeScript que escaneia ferramentas de d
 | Home: dashboard com score, ferramentas, recomendações, empty state para primeiro uso | ✅ |
 | ToolsPage: catálogo completo, filtros por categoria e status, busca | ✅ |
 | ProfilePage: checkboxes, nome editável, banner de detecção automática | ✅ |
-| SettingsPage: versão/plataforma via IPC, dados locais, toggle de scan automático, seção "Em breve" | ✅ |
+| SettingsPage: versão/plataforma via IPC, dados locais, toggle de scan automático | ✅ |
 | Cadeia de dependências entre ferramentas (composer→php, laravel→composer, pnpm→node, bun→node) | ✅ |
 | Persistência de `settings.json` com toggle `autoScan` respeitado no `StoreInitializer` | ✅ |
 | Export de perfil ativo + último scan para JSON local (save dialog nativo) | ✅ |
@@ -42,41 +42,101 @@ O DevClone é um app Electron + React + TypeScript que escaneia ferramentas de d
 | **Multi-perfis — UI:** `ProfileManagerModal` com listagem, ativar, deletar, criar novo, perfis padrão com compat % | ✅ |
 | Badge "No perfil" em ferramentas missing no `ToolList` | ✅ |
 | Linha contextual no `ToolDetailsModal` para ferramentas do perfil não instaladas | ✅ |
+| **Fix de 5 erros TypeScript pré-existentes** (literal union vs string em 5 arquivos) | ✅ |
+| **Auth — camada main process:** `token.store`, `api.client`, `auth.service` | ✅ |
+| **Auth — tela de login/cadastro:** `AuthPage` com email/senha, toggle de modo, validação, erros da API | ✅ |
+| **Auth — guard:** App.tsx bloqueia todo o app até autenticação; `loadCurrentUser()` verifica token salvo no boot | ✅ |
+| **Auth — Google OAuth PKCE:** servidor HTTP efêmero, `shell.openExternal`, CSRF via state, timeout 2 min | ✅ |
+| **Auth — Conta no Settings:** seção com nome/email e botão "Sair" (logout → volta para AuthPage automaticamente) | ✅ |
 | Commits organizados em inglês, GitHub sincronizado | ✅ |
 
-### Modelo de dados — multi-perfis
+---
 
-```typescript
-// Persiste em profiles.json
-type ProfilesStore = {
-  version: number
-  activeProfileId: string   // UUID do perfil ativo
-  profiles: UserProfile[]
-}
+## Integração com a API
 
+### Infraestrutura
+
+| Item | Detalhe |
+|---|---|
+| API REST | `http://localhost:3333` (projeto separado `devclone-api`) |
+| Autenticação | JWT salvo no main process via `electron-store` (criptografado) |
+| Token nunca exposto ao renderer | Fica em `src/main/services/token.store.ts` |
+| Wrapper de chamadas | `apiRequest<T>()` em `src/main/services/api.client.ts` |
+
+### `apiRequest<T>(method, path, body?, auth?)`
+
+```ts
+// Uso típico — chamada autenticada:
+const data = await apiRequest<{ profiles: Profile[] }>('GET', '/profiles', undefined, true)
+
+// Chamada pública:
+const data = await apiRequest<AuthResponse>('POST', '/auth/login', { email, password })
+```
+
+- Injeta `Authorization: Bearer <token>` automaticamente quando `auth: true`
+- Lança `ApiError` (com `.status: number`) se a resposta não for ok — a mensagem vem do body da API
+- 204 sem corpo retorna `undefined as T`
+
+### Endpoints de auth já integrados
+
+| Canal IPC | Rota da API | Handler |
+|---|---|---|
+| `auth:register` | `POST /auth/register` | `auth.service.register` |
+| `auth:login` | `POST /auth/login` | `auth.service.login` |
+| `auth:google` | `POST /auth/google` | `auth.service.loginWithGoogle` |
+| `auth:google-start` | — (fluxo PKCE local) | `google-oauth.service.startGoogleAuth` |
+| `auth:logout` | `DELETE /auth/logout` | `auth.service.logout` |
+| `auth:get-current-user` | `GET /users/me` | `auth.service.getCurrentUser` |
+| `auth:is-authenticated` | — (verifica token local) | `auth.service.isAuthenticated` |
+
+---
+
+## Modelo de dados
+
+### Perfis (local vs API)
+
+```ts
+// Local — persiste em profiles.json no userData
 type UserProfile = {
-  id: string        // crypto.randomUUID()
+  id: string          // deve ser o mesmo id do Profile da API após sync
   name: string
   toolIds: string[]
   createdAt?: string
-  updatedAt?: string   // usado para data relativa no modal
+  updatedAt?: string
 }
 
-// Derivado (nunca persiste)
-type EnvironmentProfile = {
-  id: string; name: string; description: string
-  tools: { toolId: string; required: boolean; minimumVersion?: string }[]
+type ProfilesStore = {
+  version: number
+  activeProfileId: string
+  profiles: UserProfile[]
+}
+
+// API — rotas: GET/POST /profiles, PATCH/DELETE /profiles/:id, PATCH /profiles/:id/activate
+type ApiProfile = {
+  id: string
+  name: string
+  toolIds: string[]
+  isActive: boolean   // ← mapeia para activeProfileId no store local
+  userId: string      // ← não precisa chegar ao renderer
+  createdAt: string
+  updatedAt: string
 }
 ```
 
-`setProfile()` no store ignora o `id` recebido e usa sempre `activeProfileId` do estado — compatibilidade retroativa com ProfilePage que constrói `UserProfile` sem UUID real.
+**Mapeamento API → local:** descartar `isActive` e `userId`; o perfil com `isActive: true` vira o `activeProfileId` do store.
 
-### Estrutura de arquivos relevantes
+---
+
+## Estrutura de arquivos relevantes
 
 ```
 src/
   main/
+    config/
+      api.config.ts       — API_CONFIG.baseUrl (default: http://localhost:3333)
+      google.config.ts    — GOOGLE_CONFIG: clientId, scopes, callbackPort (8888)
     ipc/
+      auth.ipc.ts         — auth:register/login/google/google-start/logout/get-current-user/is-authenticated
       export.ipc.ts       — export:profile
       import.ipc.ts       — import:profile
       install.ipc.ts      — install:get-command, install:run-command
@@ -84,11 +144,14 @@ src/
       preflight.ipc.ts    — preflight:run/fix/save-pending/get-pending/clear-pending
       profile.ipc.ts      — profile:get/save (compat), profile:get-all/create/delete/set-active/update-tools
       scan.ipc.ts         — scan:environment, load:lastScan
-      settings.ipc.ts     — app:getVersion, app:getUserDataPath, app:clearScanData,
-                            app:getSettings, app:saveSettings
+      settings.ipc.ts     — app:getVersion/getUserDataPath/clearScanData/getSettings/saveSettings
     services/
+      api.client.ts       — apiRequest<T>() + ApiError
+      auth.service.ts     — register, login, loginWithGoogle, logout, getCurrentUser, isAuthenticated
+      google-oauth.service.ts — startGoogleAuth(): PKCE + servidor HTTP efêmero
+      token.store.ts      — saveToken/getToken/clearToken (electron-store criptografado)
       command.service.ts  — executeCommand/spawnCommand com windowsHide:true
-      export.service.ts   — lê perfil ativo + lastScan, abre save dialog, escreve DevCloneExport
+      export.service.ts   — lê perfil ativo + lastScan, abre save dialog
       import.service.ts   — abre open dialog, valida JSON, cria novo UserProfile
       install.service.ts  — resolve install command por plataforma
       platform.service.ts — detecta SO + capabilities reais
@@ -97,25 +160,29 @@ src/
       settings.service.ts — lê/escreve settings.json no userData
       storage.service.ts  — profiles.json (ProfilesStore), last-scan.json; auto-migra active-profile.json
   preload/
-    index.ts / index.d.ts — IPC bridge completo incl. getAllProfiles, createProfile,
+    index.ts / index.d.ts — IPC bridge completo incl. auth.{register,login,google,googleStart,logout,
+                            getCurrentUser,isAuthenticated} + getAllProfiles, createProfile,
                             deleteProfile, setActiveProfile, updateProfileTools,
                             exportProfile, importProfile
   renderer/src/
     store/
-      useAppStore.ts      — profiles[], activeProfileId, loadAllProfiles, createProfile,
-                            deleteProfile, setActiveProfile; setProfile() wrapper compat
+      useAppStore.ts      — currentUser, authLoading, loadCurrentUser, register, login,
+                            loginWithGoogle, logout; profiles[], activeProfileId, loadAllProfiles,
+                            createProfile, deleteProfile, setActiveProfile; setProfile() wrapper compat
     pages/
+      AuthPage.tsx        — tela de login/cadastro + botão Google; erros da API inline
       Home.tsx            — dashboard + empty state para primeiro uso
       ToolsPage.tsx       — catálogo com filtros, busca, modal de detalhes
       ProfilePage.tsx     — perfil ativo (checkboxes, nome, banner), ProfileManagerModal
-      SettingsPage.tsx    — versão, dados locais, export/import, autoScan toggle, em breve
+      SettingsPage.tsx    — seção Conta (nome/email/logout), versão, dados locais, export/import, autoScan
     components/
       ToolList.tsx        — badge "No perfil" para ferramentas missing no perfil ativo
       ToolDetailsModal.tsx — linha contextual quando ferramenta é do perfil mas não instalada
     hooks/
       useActiveProfile.ts — wrapper do store
       useEnvironmentScan.ts — wrapper do store
-    App.tsx               — StoreInitializer chama loadAllProfiles() + respeita autoScan
+    App.tsx               — guard de auth (authLoading → AuthPage → app); StoreInitializer
+                            só roda quando currentUser existe
   shared/
     profiles/
       defaultProfiles.ts  — 4 presets EnvironmentProfile
@@ -150,16 +217,25 @@ src/
 |---|---|---|
 | `mockTools` como fallback pré-scan | UX | Mostra versões fictícias antes do primeiro scan |
 | `postgres` versionRegex `\d+\.\d+\.\d+` | Detecção | `psql` retorna `15.3` — versão sempre nula |
-| Seção "Múltiplos perfis" em `SettingsPage` lista "Em breve" mas já foi implementada | UX | Remover card da lista "Em breve" |
-| Login e autenticação | Feature | Próxima grande fase |
-| Cloud Sync | Feature | Depende de login |
+| Perfis ainda usam `storage.service.ts` local | Arquitetura | Será substituído pela Parte 3 (sync com API) |
 
 ---
 
 ## Próximo passo imediato
 
-Corrigir os 3 bugs listados acima:
+**Parte 3 — Sincronizar perfis com a API (nuvem como fonte da verdade)**
 
-1. **Novo perfil com 0 ferramentas** — ao criar via `ProfileManagerModal`, pré-selecionar automaticamente as ferramentas com status `healthy` ou `degraded` no último scan (se existir)
-2. **Contagem errada no modal** — investigar se o problema é no momento do `set()` no store ou na leitura do `profiles` array reativo
-3. **Home com perfil vazio** — adicionar fallback/orientação quando `userProfile.toolIds.length === 0`
+A API (`devclone-api`, projeto separado em `localhost:3333`) já tem as rotas de profiles prontas:
+
+| Rota | Uso |
+|---|---|
+| `GET /profiles` | Carregar todos os perfis do usuário logado |
+| `POST /profiles` | Criar novo perfil |
+| `PATCH /profiles/:id` | Atualizar nome e/ou toolIds |
+| `DELETE /profiles/:id` | Remover perfil |
+| `PATCH /profiles/:id/activate` | Ativar perfil (substitui `activeProfileId` local) |
+
+**O que muda:**
+- `profile.service.ts` no main process passa a chamar `apiRequest()` em vez de `storage.service.ts`
+- `profiles.json` local vira cache/fallback, não fonte da verdade
+- Store do renderer continua igual — só os handlers IPC mudam
