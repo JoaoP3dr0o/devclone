@@ -32,7 +32,7 @@ function handleUnauthorized(error: unknown): never {
 
 export async function fetchProfiles(): Promise<ProfilesStore> {
   try {
-    const profiles = await apiRequest<ApiProfile[]>('GET', '/profiles', undefined, true)
+    const { profiles } = await apiRequest<{ profiles: ApiProfile[] }>('GET', '/profiles', undefined, true)
     const active = profiles.find((p) => p.isActive) ?? profiles[0]
     return {
       version: 1,
@@ -46,7 +46,7 @@ export async function fetchProfiles(): Promise<ProfilesStore> {
 
 export async function createProfile(name: string, toolIds: string[]): Promise<UserProfile> {
   try {
-    const profile = await apiRequest<ApiProfile>('POST', '/profiles', { name, toolIds }, true)
+    const { profile } = await apiRequest<{ profile: ApiProfile }>('POST', '/profiles', { name, toolIds }, true)
     return mapApiProfileToLocal(profile)
   } catch (error) {
     handleUnauthorized(error)
@@ -58,7 +58,7 @@ export async function updateProfile(
   data: { name?: string; toolIds?: string[] }
 ): Promise<UserProfile> {
   try {
-    const profile = await apiRequest<ApiProfile>('PATCH', `/profiles/${id}`, data, true)
+    const { profile } = await apiRequest<{ profile: ApiProfile }>('PATCH', `/profiles/${id}`, data, true)
     return mapApiProfileToLocal(profile)
   } catch (error) {
     handleUnauthorized(error)
