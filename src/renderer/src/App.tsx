@@ -290,6 +290,14 @@ function App(): React.JSX.Element {
     void useAppStore.getState().loadCurrentUser()
   }, [])
 
+  // Reset route to / whenever the user is not logged in, so the next
+  // login always lands on Home regardless of which page was active before.
+  useEffect(() => {
+    if (!authLoading && currentUser === null) {
+      window.location.hash = '#/'
+    }
+  }, [currentUser, authLoading])
+
   if (authLoading) {
     return <AuthLoadingScreen />
   }
