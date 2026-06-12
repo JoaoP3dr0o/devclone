@@ -38,6 +38,18 @@ const electron = {
     getPending: () => ipcRenderer.invoke('preflight:get-pending'),
     clearPending: () => ipcRenderer.invoke('preflight:clear-pending')
   },
+  getLocalProfilesRaw: () => ipcRenderer.invoke('profile:get-local-raw'),
+  checkMigrated: () => ipcRenderer.invoke('profile:check-migrated'),
+  setMigrated: () => ipcRenderer.invoke('profile:set-migrated'),
+  cloudProfile: {
+    fetchAll: () => ipcRenderer.invoke('cloud-profile:fetch-all'),
+    create: (name: string, toolIds: string[]) =>
+      ipcRenderer.invoke('cloud-profile:create', name, toolIds),
+    update: (id: string, data: { name?: string; toolIds?: string[] }) =>
+      ipcRenderer.invoke('cloud-profile:update', id, data),
+    delete: (id: string) => ipcRenderer.invoke('cloud-profile:delete', id),
+    activate: (id: string) => ipcRenderer.invoke('cloud-profile:activate', id),
+  },
   auth: {
     register: (name: string, email: string, password: string) =>
       ipcRenderer.invoke('auth:register', name, email, password),

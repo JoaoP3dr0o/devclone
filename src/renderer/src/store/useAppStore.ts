@@ -55,6 +55,10 @@ type AppStore = {
 
 const EMPTY_PROFILE: UserProfile = { id: '', name: '', toolIds: [] }
 
+function isUnauthorized(error: unknown): boolean {
+  return error instanceof Error && error.message === 'UNAUTHORIZED'
+}
+
 export const useAppStore = create<AppStore>((set, get) => ({
   currentUser: null,
   authLoading: true,
@@ -97,16 +101,22 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   logout: async () => {
     await window.electron.auth.logout()
-    set({ currentUser: null })
+    set({
+      currentUser: null,
+      profiles: [],
+      activeProfileId: '',
+      userProfile: EMPTY_PROFILE,
+      environmentProfile: userProfileToEnvironmentProfile(EMPTY_PROFILE),
+    })
   },
 
   loadAllProfiles: async () => {
     try {
-      const store = await window.electron.getAllProfiles()
+      const store = await window.electron.cloudProfile.fetchAll()
       const activeProfile =
         store.profiles.find((p) => p.id === store.activeProfileId) ?? store.profiles[0]
       if (!activeProfile) {
-        set({ profileLoading: false })
+        set({ profiles: store.profiles, activeProfileId: '', profileLoading: false })
         return
       }
       set({
@@ -114,9 +124,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
         activeProfileId: store.activeProfileId,
         userProfile: activeProfile,
         environmentProfile: userProfileToEnvironmentProfile(activeProfile),
-        profileLoading: false
+        profileLoading: false,
       })
-    } catch {
+    } catch (error) {
+      if (isUnauthorized(error)) {
+        set({ currentUser: null, profiles: [], activeProfileId: '' })
+      }
       set({ profileLoading: false })
     }
   },
@@ -126,43 +139,57 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   setProfile: async (profile: ProfileInput) => {
-    const { activeProfileId, profiles } = get()
-    const existing = profiles.find((p) => p.id === activeProfileId)
-    if (!existing) return
+    const { activeProfileId } = get()
+    if (!activeProfileId) return
 
-    const now = new Date().toISOString()
-    const updated: UserProfile = {
-      id: existing.id,
-      name: profile.name,
-      toolIds: profile.toolIds,
-      createdAt: existing.createdAt ?? now,
-      updatedAt: now
+    try {
+      await window.electron.cloudProfile.update(activeProfileId, {
+        name: profile.name,
+        toolIds: profile.toolIds,
+      })
+      await get().loadAllProfiles()
+    } catch (error) {
+      if (isUnauthorized(error)) {
+        set({ currentUser: null })
+      }
+      throw error
     }
-
-    set((state) => ({
-      userProfile: updated,
-      environmentProfile: userProfileToEnvironmentProfile(updated),
-      profiles: state.profiles.map((p) => (p.id === activeProfileId ? updated : p))
-    }))
-
-    await window.electron.saveUserProfile(updated)
   },
 
-  createProfile: async (name: string, toolIds: string[], startEmpty?: boolean) => {
-    const newProfile = await window.electron.createProfile(name, toolIds, startEmpty)
-    if (!newProfile) return null
-    await get().loadAllProfiles()
-    return newProfile
+  createProfile: async (name: string, toolIds: string[]) => {
+    try {
+      const newProfile = await window.electron.cloudProfile.create(name, toolIds)
+      if (!newProfile) return null
+      await get().loadAllProfiles()
+      return newProfile
+    } catch (error) {
+      if (isUnauthorized(error)) {
+        set({ currentUser: null })
+      }
+      return null
+    }
   },
 
   deleteProfile: async (id: string) => {
-    await window.electron.deleteProfile(id)
-    await get().loadAllProfiles()
+    try {
+      await window.electron.cloudProfile.delete(id)
+      await get().loadAllProfiles()
+    } catch (error) {
+      if (isUnauthorized(error)) {
+        set({ currentUser: null })
+      }
+    }
   },
 
   setActiveProfile: async (id: string) => {
-    await window.electron.setActiveProfile(id)
-    await get().loadAllProfiles()
+    try {
+      await window.electron.cloudProfile.activate(id)
+      await get().loadAllProfiles()
+    } catch (error) {
+      if (isUnauthorized(error)) {
+        set({ currentUser: null })
+      }
+    }
   },
 
   updateProfileTools: async (profileId: string, toolIds: string[]) => {
@@ -178,12 +205,21 @@ export const useAppStore = create<AppStore>((set, get) => ({
         ...(updatedActive
           ? {
               userProfile: updatedActive,
-              environmentProfile: userProfileToEnvironmentProfile(updatedActive)
+              environmentProfile: userProfileToEnvironmentProfile(updatedActive),
             }
-          : {})
+          : {}),
       }
     })
-    await window.electron.updateProfileTools(profileId, toolIds)
+
+    try {
+      await window.electron.cloudProfile.update(profileId, { toolIds })
+    } catch (error) {
+      if (isUnauthorized(error)) {
+        set({ currentUser: null })
+        return
+      }
+      await get().loadAllProfiles()
+    }
   },
 
   loadLastScan: async () => {
@@ -212,5 +248,5 @@ export const useAppStore = create<AppStore>((set, get) => ({
   clearScanData: async () => {
     await window.electron.clearScanData()
     set({ scanResult: null, lastScanAt: null })
-  }
+  },
 }))

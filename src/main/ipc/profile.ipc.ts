@@ -3,11 +3,14 @@ import { ipcMain } from 'electron'
 import type { UserProfile } from '../../shared/profiles/profile.types'
 import { createProfile } from '../../shared/profiles/userProfile.utils'
 import {
+  checkMigrated,
+  getLocalProfilesRaw,
   getProfilesStore,
   loadLastScan,
   loadUserProfile,
   saveProfilesStore,
-  saveUserProfile
+  saveUserProfile,
+  setMigrated
 } from '../services/storage.service'
 
 function isValidUserProfile(value: unknown): value is UserProfile {
@@ -68,6 +71,12 @@ export function registerProfileIpc(): void {
     if (!store.profiles.some((p) => p.id === id)) return
     await saveProfilesStore({ ...store, activeProfileId: id })
   })
+
+  ipcMain.handle('profile:get-local-raw', () => getLocalProfilesRaw())
+
+  ipcMain.handle('profile:check-migrated', () => checkMigrated())
+
+  ipcMain.handle('profile:set-migrated', () => setMigrated())
 
   ipcMain.handle('profile:update-tools', async (_event, profileId: unknown, toolIds: unknown) => {
     if (typeof profileId !== 'string' || !Array.isArray(toolIds)) return

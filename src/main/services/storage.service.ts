@@ -133,6 +133,32 @@ export async function getProfilesStore(): Promise<ProfilesStore> {
   return defaultStore
 }
 
+export async function getLocalProfilesRaw(): Promise<ProfilesStore | null> {
+  try {
+    const content = await readFile(getProfilesFilePath(), 'utf-8')
+    const parsed: unknown = JSON.parse(content)
+    if (isValidProfilesStore(parsed)) return parsed
+    return null
+  } catch {
+    return null
+  }
+}
+
+const MIGRATED_FLAG_FILE = 'migrated.json'
+
+export async function checkMigrated(): Promise<boolean> {
+  try {
+    await readFile(join(app.getPath('userData'), MIGRATED_FLAG_FILE), 'utf-8')
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function setMigrated(): Promise<void> {
+  await writeFile(join(app.getPath('userData'), MIGRATED_FLAG_FILE), '{}', 'utf-8')
+}
+
 // ─── Backward-compat wrappers ─────────────────────────────────────────────────
 
 export async function loadUserProfile(): Promise<UserProfile | null> {

@@ -3,6 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerAuthIpc } from './ipc/auth.ipc'
+import { registerCloudProfileIpc } from './ipc/cloud-profile.ipc'
 import { registerExportIpc } from './ipc/export.ipc'
 import { registerImportIpc } from './ipc/import.ipc'
 import { registerInstallIpc } from './ipc/install.ipc'
@@ -63,6 +64,7 @@ app.whenReady().then(() => {
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
   registerAuthIpc()
+  registerCloudProfileIpc()
   registerScanIpc()
   registerInstallIpc()
   registerPlatformIpc()

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { UserProfile } from '@shared/profiles/profile.types'
 import { HashRouter, Route, Routes } from 'react-router-dom'
 
 import Layout from './components/Layout'
@@ -13,23 +14,159 @@ import { toolsCatalog } from '@shared/tools/catalog'
 const APP_FONT =
   'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
 
-// Inicializa dados locais (perfis + scan) — só roda quando autenticado
-function StoreInitializer(): null {
-  useEffect(() => {
-    void useAppStore.getState().loadAllProfiles()
-    window.electron
-      .getSettings()
-      .then((settings) => {
-        if (settings.autoScan) {
-          void useAppStore.getState().triggerScan()
-        } else {
-          void useAppStore.getState().loadLastScan()
-        }
-      })
-      .catch(() => {
+interface MigrationModalProps {
+  profiles: UserProfile[]
+  onSend: () => Promise<void>
+  onSkip: () => Promise<void>
+}
+
+function MigrationModal({ profiles, onSend, onSkip }: MigrationModalProps): React.JSX.Element {
+  const [loading, setLoading] = useState(false)
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 200,
+        background: 'rgba(0,0,0,0.6)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: APP_FONT,
+      }}
+    >
+      <div
+        style={{
+          background: '#111827',
+          border: '1px solid #1e293b',
+          borderRadius: 12,
+          padding: '28px 32px',
+          maxWidth: 400,
+          width: '90%',
+        }}
+      >
+        <p style={{ color: '#e2e8f0', fontSize: 15, margin: '0 0 8px' }}>
+          Encontramos {profiles.length} perfil{profiles.length > 1 ? 'is' : ''} neste computador.
+        </p>
+        <p style={{ color: '#94a3b8', fontSize: 13, margin: '0 0 24px' }}>
+          Deseja enviar para sua conta na nuvem?
+        </p>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button
+            disabled={loading}
+            onClick={() => void onSkip()}
+            style={{
+              border: '1px solid #334155',
+              borderRadius: 8,
+              padding: '8px 16px',
+              background: 'transparent',
+              color: '#94a3b8',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: 13,
+            }}
+          >
+            Começar do zero
+          </button>
+          <button
+            disabled={loading}
+            onClick={() => {
+              setLoading(true)
+              void onSend().catch(() => setLoading(false))
+            }}
+            style={{
+              border: 'none',
+              borderRadius: 8,
+              padding: '8px 16px',
+              background: '#2563eb',
+              color: '#fff',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontWeight: 600,
+              fontSize: 13,
+            }}
+          >
+            {loading ? 'Enviando...' : 'Enviar para a nuvem'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function runScan(): void {
+  window.electron
+    .getSettings()
+    .then((settings) => {
+      if (settings.autoScan) {
+        void useAppStore.getState().triggerScan()
+      } else {
         void useAppStore.getState().loadLastScan()
-      })
+      }
+    })
+    .catch(() => {
+      void useAppStore.getState().loadLastScan()
+    })
+}
+
+// Inicializa perfis (nuvem) e scan — só roda quando autenticado
+function StoreInitializer(): React.JSX.Element | null {
+  const [migrationProfiles, setMigrationProfiles] = useState<UserProfile[] | null>(null)
+  const [ready, setReady] = useState(false)
+  const checked = useRef(false)
+
+  useEffect(() => {
+    if (checked.current) return
+    checked.current = true
+
+    async function checkMigration(): Promise<void> {
+      try {
+        const alreadyMigrated = await window.electron.checkMigrated()
+        if (!alreadyMigrated) {
+          const localStore = await window.electron.getLocalProfilesRaw()
+          if (localStore && localStore.profiles.length > 0) {
+            const cloudStore = await window.electron.cloudProfile.fetchAll()
+            if (cloudStore.profiles.length === 0) {
+              setMigrationProfiles(localStore.profiles)
+              return
+            }
+          }
+        }
+      } catch {
+        // erro na checagem — prossegue normalmente
+      }
+      setReady(true)
+    }
+
+    void checkMigration()
   }, [])
+
+  useEffect(() => {
+    if (!ready) return
+    void useAppStore.getState().loadAllProfiles()
+    runScan()
+  }, [ready])
+
+  if (migrationProfiles) {
+    return (
+      <MigrationModal
+        profiles={migrationProfiles}
+        onSend={async () => {
+          for (const profile of migrationProfiles) {
+            await window.electron.cloudProfile.create(profile.name, profile.toolIds)
+          }
+          await window.electron.setMigrated()
+          setMigrationProfiles(null)
+          setReady(true)
+        }}
+        onSkip={async () => {
+          await window.electron.setMigrated()
+          setMigrationProfiles(null)
+          setReady(true)
+        }}
+      />
+    )
+  }
+
   return null
 }
 

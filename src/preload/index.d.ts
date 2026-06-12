@@ -48,6 +48,16 @@ type DevCloneElectronAPI = ElectronAPI & {
     getPending: () => Promise<string[]>
     clearPending: () => Promise<void>
   }
+  getLocalProfilesRaw: () => Promise<ProfilesStore | null>
+  checkMigrated: () => Promise<boolean>
+  setMigrated: () => Promise<void>
+  cloudProfile: {
+    fetchAll: () => Promise<ProfilesStore>
+    create: (name: string, toolIds: string[]) => Promise<UserProfile>
+    update: (id: string, data: { name?: string; toolIds?: string[] }) => Promise<UserProfile>
+    delete: (id: string) => Promise<void>
+    activate: (id: string) => Promise<void>
+  }
   auth: {
     register: (name: string, email: string, password: string) => Promise<{ user: User }>
     login: (email: string, password: string) => Promise<{ user: User }>
