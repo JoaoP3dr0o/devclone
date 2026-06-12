@@ -74,9 +74,12 @@ export async function deleteProfile(id: string): Promise<void> {
 }
 
 export async function activateProfile(id: string): Promise<void> {
+  console.log('[DevClone] activateProfile — id:', id)
   try {
     await apiRequest<void>('PATCH', `/profiles/${id}/activate`, undefined, true)
+    console.log('[DevClone] activateProfile — success')
   } catch (error) {
+    console.error('[DevClone] activateProfile — error:', error)
     handleUnauthorized(error)
   }
 }

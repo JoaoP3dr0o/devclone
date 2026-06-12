@@ -182,14 +182,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   setActiveProfile: async (id: string) => {
+    console.log('[DevClone] store:setActiveProfile — id:', id)
     try {
       await window.electron.cloudProfile.activate(id)
-      await get().loadAllProfiles()
     } catch (error) {
+      console.error('[DevClone] store:setActiveProfile — activate error:', error)
       if (isUnauthorized(error)) {
         set({ currentUser: null })
+        return
       }
+      // Non-UNAUTHORIZED: reload to show current server state
     }
+    await get().loadAllProfiles()
   },
 
   updateProfileTools: async (profileId: string, toolIds: string[]) => {
