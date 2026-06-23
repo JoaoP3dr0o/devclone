@@ -58,6 +58,7 @@ type DevCloneElectronAPI = ElectronAPI & {
     delete: (id: string) => Promise<void>
     activate: (id: string) => Promise<void>
   }
+  onDeepLink: (callback: (url: string) => void) => void
   auth: {
     register: (name: string, email: string, password: string) => Promise<{ user: User }>
     login: (email: string, password: string) => Promise<{ user: User }>

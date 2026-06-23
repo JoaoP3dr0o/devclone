@@ -50,6 +50,9 @@ const electron = {
     delete: (id: string) => ipcRenderer.invoke('cloud-profile:delete', id),
     activate: (id: string) => ipcRenderer.invoke('cloud-profile:activate', id),
   },
+  onDeepLink: (callback: (url: string) => void) => {
+    ipcRenderer.on('deep-link', (_event, url) => callback(url))
+  },
   auth: {
     register: (name: string, email: string, password: string) =>
       ipcRenderer.invoke('auth:register', name, email, password),

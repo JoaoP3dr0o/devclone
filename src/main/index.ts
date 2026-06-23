@@ -13,9 +13,11 @@ import { registerProfileIpc } from './ipc/profile.ipc'
 import { registerScanIpc } from './ipc/scan.ipc'
 import { registerSettingsIpc } from './ipc/settings.ipc'
 
+let mainWindow: BrowserWindow | null = null
+
 function createWindow(): void {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  const win = new BrowserWindow({
     width: 900,
     height: 670,
     show: false,
@@ -28,12 +30,13 @@ function createWindow(): void {
       nodeIntegration: false
     }
   })
+  mainWindow = win
 
-  mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+  win.on('ready-to-show', () => {
+    win.show()
   })
 
-  mainWindow.webContents.setWindowOpenHandler((details) => {
+  win.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
   })
@@ -41,11 +44,34 @@ function createWindow(): void {
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    win.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    win.loadFile(join(__dirname, '../renderer/index.html'))
   }
 }
+
+app.setAsDefaultProtocolClient('devclone')
+
+// Windows/Linux: deep link chega como argumento na segunda instância
+const gotTheLock = app.requestSingleInstanceLock()
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', (_event, commandLine) => {
+    const url = commandLine.find((arg) => arg.startsWith('devclone://'))
+    if (url) mainWindow?.webContents.send('deep-link', url)
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
+  })
+}
+
+// macOS: deep link chega via open-url
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  mainWindow?.webContents.send('deep-link', url)
+})
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
