@@ -1,8 +1,8 @@
 # DevClone — Checkpoint
 
-**Data:** 2026-06-11
+**Data:** 2026-06-23
 **Branch:** main
-**Último commit:** `6041267 feat(auth): implement google oauth with pkce flow`
+**Último commit:** `279e9e0 chore: configure electron-builder for production build`
 **Remote:** sincronizado com origin/main
 
 ---
@@ -48,6 +48,10 @@ O DevClone é um app Electron + React + TypeScript que escaneia ferramentas de d
 | **Auth — guard:** App.tsx bloqueia todo o app até autenticação; `loadCurrentUser()` verifica token salvo no boot | ✅ |
 | **Auth — Google OAuth PKCE:** servidor HTTP efêmero, `shell.openExternal`, CSRF via state, timeout 2 min | ✅ |
 | **Auth — Conta no Settings:** seção com nome/email e botão "Sair" (logout → volta para AuthPage automaticamente) | ✅ |
+| **Sincronização de perfis com a nuvem:** `profile.service.ts` chama `apiRequest()` — API é fonte da verdade | ✅ |
+| **API de produção:** `https://api.devclone.com.br` configurada como fallback em `api.config.ts` | ✅ |
+| **Validação end-to-end em produção:** login email/senha, registro, perfis na nuvem, token persistido | ✅ |
+| **Build do instalador Windows:** `devclone-1.0.0-setup.exe` gerado via `npm run build:win` | ✅ |
 | Commits organizados em inglês, GitHub sincronizado | ✅ |
 
 ---
@@ -58,7 +62,8 @@ O DevClone é um app Electron + React + TypeScript que escaneia ferramentas de d
 
 | Item | Detalhe |
 |---|---|
-| API REST | `http://localhost:3333` (projeto separado `devclone-api`) |
+| API REST (produção) | `https://api.devclone.com.br` — fallback em `src/main/config/api.config.ts` |
+| API REST (dev) | `http://localhost:3333` — sobrepõe via variável de ambiente `VITE_API_URL` |
 | Autenticação | JWT salvo no main process via `electron-store` (criptografado) |
 | Token nunca exposto ao renderer | Fica em `src/main/services/token.store.ts` |
 | Wrapper de chamadas | `apiRequest<T>()` em `src/main/services/api.client.ts` |
@@ -217,25 +222,25 @@ src/
 |---|---|---|
 | `mockTools` como fallback pré-scan | UX | Mostra versões fictícias antes do primeiro scan |
 | `postgres` versionRegex `\d+\.\d+\.\d+` | Detecção | `psql` retorna `15.3` — versão sempre nula |
-| Perfis ainda usam `storage.service.ts` local | Arquitetura | Será substituído pela Parte 3 (sync com API) |
+| Instalador sem code signing | Distribuição | Windows SmartScreen bloqueia o `.exe` para usuários novos |
 
 ---
 
-## Próximo passo imediato
+## Marco de produção (2026-06-23)
 
-**Parte 3 — Sincronizar perfis com a API (nuvem como fonte da verdade)**
+O app está em produção e funcional end-to-end:
+- Login, registro e sincronização de perfis apontam para `https://api.devclone.com.br`
+- Instalador `devclone-1.0.0-setup.exe` gerado e assinado (self-signed via `signtool.exe`)
+- Fluxo validado manualmente: autenticação, criação de perfil, scan, persistência de token
 
-A API (`devclone-api`, projeto separado em `localhost:3333`) já tem as rotas de profiles prontas:
+---
 
-| Rota | Uso |
-|---|---|
-| `GET /profiles` | Carregar todos os perfis do usuário logado |
-| `POST /profiles` | Criar novo perfil |
-| `PATCH /profiles/:id` | Atualizar nome e/ou toolIds |
-| `DELETE /profiles/:id` | Remover perfil |
-| `PATCH /profiles/:id/activate` | Ativar perfil (substitui `activeProfileId` local) |
+## Pendente
 
-**O que muda:**
-- `profile.service.ts` no main process passa a chamar `apiRequest()` em vez de `storage.service.ts`
-- `profiles.json` local vira cache/fallback, não fonte da verdade
-- Store do renderer continua igual — só os handlers IPC mudam
+| Item | Prioridade | Notas |
+|---|---|---|
+| **Google OAuth em produção** | Alta | Callback URL precisa ser registrada no Google Cloud Console apontando para produção |
+| **Recuperação de senha** | Alta | Rota `POST /auth/forgot-password` ainda não implementada na API |
+| **Code signing (certificado EV)** | Média | Elimina o bloqueio do Windows SmartScreen; requer compra de certificado |
+| **Landing page** | Média | Página de marketing / download em `devclone.com.br` |
+| **Auto-update** | Baixa | `electron-updater` com `blockmap` já gerado — falta configurar o servidor de update |
