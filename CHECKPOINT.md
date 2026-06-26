@@ -2,7 +2,7 @@
 
 **Data:** 2026-06-26
 **Branch:** main
-**Último commit:** `263c473 chore: ignore tsbuildinfo build artifacts`
+**Último commit:** `b0756c0 feat: clean install log output with progress bar and winget noise filtering`
 **Remote:** sincronizado com origin/main
 
 ---
@@ -56,6 +56,11 @@ O DevClone é um app Electron + React + TypeScript que escaneia ferramentas de d
 | **Recuperação de senha — tela "Esqueci minha senha":** campo de email, chama `POST /auth/forgot-password`, exibe confirmação | ✅ |
 | **Recuperação de senha — deep link:** `devclone://reset-password?token=xxx` capturado no main process e enviado ao renderer via IPC `deep-link` | ✅ |
 | **Recuperação de senha — tela de redefinição:** nova senha + confirmação, valida coincidência, chama `POST /auth/reset-password`, redireciona para login | ✅ |
+| **Log de instalação redesenhado:** linhas classificadas por tipo (error/warning/success/info) com ícones e cores | ✅ |
+| **Barra de progresso visual durante download:** filtra barras ASCII do winget e exibe progresso suave em `%` | ✅ |
+| **Filtro de ruído do winget:** spinner frames (`-`, `\`, `|`, `/`) e linhas em branco são descartados no main process | ✅ |
+| **Detecção de prompts interativos Y/N:** banner de confirmação aparece no modal para o usuário responder sem travar | ✅ |
+| **stdin aberto no processo filho:** `writeToStdin` envia resposta ao instalador; processo nunca fica em deadlock | ✅ |
 | Commits organizados em inglês, GitHub sincronizado | ✅ |
 
 ---
@@ -258,4 +263,4 @@ O app está em produção e funcional end-to-end:
 
 ## Próximo passo
 
-Suporte Linux e macOS — builds nas outras plataformas-alvo e validação do deep link `devclone://` em cada SO.
+Auto-update via GitHub Releases — integrar `electron-updater`, publicar releases no GitHub com os artefatos do `electron-builder` (`blockmap` já gerado) e configurar `autoUpdater` no main process para verificar, baixar e notificar o usuário de novas versões.
