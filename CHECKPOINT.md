@@ -2,7 +2,7 @@
 
 **Data:** 2026-06-26
 **Branch:** main
-**Último commit:** `b0756c0 feat: clean install log output with progress bar and winget noise filtering`
+**Último commit:** `b9848dc chore: set github releases to publish automatically without draft`
 **Remote:** sincronizado com origin/main
 
 ---
@@ -61,6 +61,9 @@ O DevClone é um app Electron + React + TypeScript que escaneia ferramentas de d
 | **Filtro de ruído do winget:** spinner frames (`-`, `\`, `|`, `/`) e linhas em branco são descartados no main process | ✅ |
 | **Detecção de prompts interativos Y/N:** banner de confirmação aparece no modal para o usuário responder sem travar | ✅ |
 | **stdin aberto no processo filho:** `writeToStdin` envia resposta ao instalador; processo nunca fica em deadlock | ✅ |
+| **Auto-update via GitHub Releases:** `electron-updater` verifica no startup e a cada 6h, baixa em background, banner no canto inferior esquerdo com botão "Reiniciar e atualizar" | ✅ |
+| **`releaseType: release` configurado:** releases publicados automaticamente sem draft via `electron-builder.yml` | ✅ |
+| **Seções "EM BREVE" e "Próximos passos" atualizadas:** roadmap real (Linux, macOS, Marketplace de perfis, CLI companion) | ✅ |
 | Commits organizados em inglês, GitHub sincronizado | ✅ |
 
 ---
@@ -242,7 +245,7 @@ src/
 
 O app está em produção e funcional end-to-end:
 - Login, registro e sincronização de perfis apontam para `https://api.devclone.com.br`
-- Instalador `devclone-1.0.0-setup.exe` gerado e assinado (self-signed via `signtool.exe`)
+- Instalador `devclone-1.0.0-setup.exe` gerado e assinado (self-signed via `signtool.exe`); versão atual: `v1.0.2`
 - Fluxo validado manualmente: autenticação, criação de perfil, scan, persistência de token
 - Recuperação de senha end-to-end: email → deep link `devclone://reset-password?token=xxx` → redefinição
 
@@ -257,10 +260,10 @@ O app está em produção e funcional end-to-end:
 | **Landing page** | Média | Página de marketing / download em `devclone.com.br` |
 | **Suporte Linux e macOS** | Média | Builds e testes nas outras plataformas-alvo |
 | **Validação de senha com feedback visual** | Baixa | Indicador de força da senha, requisitos visíveis ao digitar (polimento UX) |
-| **Auto-update** | Baixa | `electron-updater` com `blockmap` já gerado — falta configurar o servidor de update |
+| **Auto-update** | ~~Baixa~~ Concluído | `electron-updater` integrado com GitHub Releases, banner de progresso e `releaseType: release` configurado |
 
 ---
 
 ## Próximo passo
 
-Auto-update via GitHub Releases — integrar `electron-updater`, publicar releases no GitHub com os artefatos do `electron-builder` (`blockmap` já gerado) e configurar `autoUpdater` no main process para verificar, baixar e notificar o usuário de novas versões.
+Suporte Linux e macOS — builds e testes nas plataformas-alvo, instalação de ferramentas via Homebrew (macOS) e gerenciadores de pacotes nativos (Ubuntu/Fedora/Arch).
