@@ -80,6 +80,8 @@ declare global {
     api: {
       forgotPassword: (email: string) => Promise<unknown>
       resetPassword: (token: string, newPassword: string) => Promise<unknown>
+      onUpdaterEvent: (callback: (payload: { event: string; data?: unknown }) => void) => void
+      applyUpdate: () => Promise<void>
     }
   }
 }

@@ -10,6 +10,7 @@ import SettingsPage from './pages/SettingsPage'
 import ToolsPage from './pages/ToolsPage'
 import { useAppStore } from './store/useAppStore'
 import { toolsCatalog } from '@shared/tools/catalog'
+import { UpdateBanner } from './components/UpdateBanner'
 
 const APP_FONT =
   'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
@@ -310,6 +311,7 @@ function App(): React.JSX.Element {
     <HashRouter>
       <StoreInitializer />
       <PendingInstallsBanner />
+      <UpdateBanner />
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />

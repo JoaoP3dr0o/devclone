@@ -12,6 +12,8 @@ import { registerPreflightIpc } from './ipc/preflight.ipc'
 import { registerProfileIpc } from './ipc/profile.ipc'
 import { registerScanIpc } from './ipc/scan.ipc'
 import { registerSettingsIpc } from './ipc/settings.ipc'
+import { registerUpdaterIpc, setUpdateReady } from './ipc/updater.ipc'
+import { initAutoUpdater } from './services/updater.service'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -99,8 +101,12 @@ app.whenReady().then(() => {
   registerSettingsIpc()
   registerExportIpc()
   registerImportIpc()
+  registerUpdaterIpc()
 
   createWindow()
+  if (mainWindow) {
+    initAutoUpdater(mainWindow, () => setUpdateReady(true))
+  }
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

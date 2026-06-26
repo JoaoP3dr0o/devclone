@@ -6,6 +6,9 @@ const api = {
   forgotPassword: (email: string) => ipcRenderer.invoke('auth:forgot-password', email),
   resetPassword: (token: string, newPassword: string) =>
     ipcRenderer.invoke('auth:reset-password', token, newPassword),
+  onUpdaterEvent: (callback: (payload: { event: string; data?: unknown }) => void) =>
+    ipcRenderer.on('updater:event', (_event, payload) => callback(payload)),
+  applyUpdate: () => ipcRenderer.invoke('updater:apply'),
 }
 const electron = {
   ...electronAPI,
