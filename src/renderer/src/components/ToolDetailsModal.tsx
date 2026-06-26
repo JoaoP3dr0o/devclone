@@ -27,6 +27,16 @@ function getStatusInsight(tool: DevTool): string {
   return getToolInsightMessage(tool.id, tool.status)
 }
 
+function classifyLine(line: string): 'error' | 'warning' | 'success' | 'info' {
+  if (/error|failed|falha/i.test(line)) return 'error'
+  if (/warn|aviso/i.test(line)) return 'warning'
+  if (/success|conclu|instalado|ok|100%/i.test(line)) return 'success'
+  return 'info'
+}
+
+const LINE_COLORS = { error: '#ff7b72', warning: '#d29922', success: '#3fb950', info: '#c9d1d9' }
+const LINE_ICONS = { error: '✗', warning: '⚠', success: '✓', info: '›' }
+
 function ToolDetailsModal({
   tool,
   onClose,
@@ -41,6 +51,7 @@ function ToolDetailsModal({
   const [installPhase, setInstallPhase] = useState<InstallPhase>('idle')
   const [outputLog, setOutputLog] = useState<string[]>([])
   const [installResult, setInstallResult] = useState<InstallResult | null>(null)
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null)
   const [showPreflight, setShowPreflight] = useState(false)
   const [platformId, setPlatformId] = useState<string>('windows')
   const logEndRef = useRef<HTMLDivElement>(null)
@@ -78,6 +89,7 @@ function ToolDetailsModal({
     setInstallPhase('idle')
     setOutputLog([])
     setInstallResult(null)
+    setPendingPrompt(null)
   }, [tool?.id])
 
   useEffect(() => {
@@ -122,9 +134,16 @@ function ToolDetailsModal({
     setInstallPhase('running')
     setOutputLog([])
     setInstallResult(null)
+    setPendingPrompt(null)
 
     window.electron.onInstallOutput((chunk) => {
-      setOutputLog((prev) => [...prev, chunk.text])
+      if (chunk.type !== 'prompt') {
+        setOutputLog((prev) => [...prev, chunk.text])
+      }
+    })
+
+    window.electron.onInstallPrompt((text) => {
+      setPendingPrompt(text)
     })
 
     try {
@@ -134,6 +153,7 @@ function ToolDetailsModal({
       setInstallResult({ success: false, error: String(err) })
     } finally {
       setInstallPhase('done')
+      setPendingPrompt(null)
       window.electron.removeInstallListeners()
     }
   }
@@ -398,10 +418,12 @@ function ToolDetailsModal({
                 outputLog={outputLog}
                 result={installResult}
                 logEndRef={logEndRef}
+                pendingPrompt={pendingPrompt}
                 onRequestInstall={() => setShowPreflight(true)}
                 onConfirm={handleRunInstall}
                 onCancel={() => setInstallPhase('idle')}
                 onRescan={handleRescanAndClose}
+                onDismissPrompt={() => setPendingPrompt(null)}
               />
 
               {showPreflight && tool && (
@@ -430,10 +452,12 @@ type InstallSectionProps = {
   outputLog: string[]
   result: InstallResult | null
   logEndRef: React.RefObject<HTMLDivElement | null>
+  pendingPrompt: string | null
   onRequestInstall: () => void
   onConfirm: () => void
   onCancel: () => void
   onRescan: () => void
+  onDismissPrompt: () => void
 }
 
 function InstallSection({
@@ -442,10 +466,12 @@ function InstallSection({
   outputLog,
   result,
   logEndRef,
+  pendingPrompt,
   onRequestInstall,
   onConfirm,
   onCancel,
-  onRescan
+  onRescan,
+  onDismissPrompt
 }: InstallSectionProps): React.JSX.Element {
   if (phase === 'idle') {
     return (
@@ -536,32 +562,16 @@ function InstallSection({
     )
   }
 
-  const logText = outputLog.join('')
   const isDone = phase === 'done'
+  const lines = outputLog.join('').split('\n').filter(Boolean)
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        {!isDone && (
-          <span
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: '50%',
-              background: '#3b82f6',
-              display: 'inline-block',
-              animation: 'pulse 1.2s infinite'
-            }}
-          />
-        )}
-        <span style={{ fontWeight: 700, fontSize: 14 }}>
-          {isDone
-            ? result?.success
-              ? 'Instalação concluída'
-              : 'Falha na instalação'
-            : 'Instalando...'}
-        </span>
-        {isDone && (
+      {isDone && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontWeight: 700, fontSize: 14 }}>
+            {result?.success ? 'Instalação concluída' : 'Falha na instalação'}
+          </span>
           <span
             style={{
               fontSize: 12,
@@ -576,28 +586,102 @@ function InstallSection({
           >
             {result?.success ? 'OK' : `exit ${result?.exitCode ?? 1}`}
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
-      <pre
+      {pendingPrompt !== null && (
+        <div
+          style={{
+            background: '#1c2128',
+            border: '1px solid #d29922',
+            borderRadius: 8,
+            padding: '12px 16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10
+          }}
+        >
+          <div style={{ color: '#d29922', fontSize: 13, fontFamily: 'monospace' }}>
+            ⚠ O instalador está aguardando sua confirmação:
+          </div>
+          <div style={{ color: '#c9d1d9', fontSize: 12, fontFamily: 'monospace' }}>
+            {pendingPrompt}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => {
+                void window.electron.writeToStdin('Y\n')
+                onDismissPrompt()
+              }}
+              style={{
+                border: 'none',
+                borderRadius: 8,
+                padding: '6px 14px',
+                background: '#2563eb',
+                color: '#fff',
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontSize: 13
+              }}
+            >
+              ✓ Sim
+            </button>
+            <button
+              onClick={() => {
+                void window.electron.writeToStdin('N\n')
+                onDismissPrompt()
+              }}
+              style={{
+                border: '1px solid rgba(148, 163, 184, 0.22)',
+                borderRadius: 8,
+                padding: '6px 14px',
+                background: 'transparent',
+                color: '#94a3b8',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: 13
+              }}
+            >
+              ✗ Não
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div
         style={{
-          margin: 0,
-          padding: '12px 14px',
-          borderRadius: 12,
-          background: 'rgba(2, 6, 23, 0.7)',
-          border: '1px solid rgba(148, 163, 184, 0.14)',
-          color: '#cbd5e1',
-          fontSize: 12,
+          background: '#0d1117',
+          border: '1px solid #30363d',
+          borderRadius: 8,
+          padding: 12,
           fontFamily: 'monospace',
-          overflowY: 'auto',
-          maxHeight: 240,
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-all'
+          fontSize: 13,
+          maxHeight: 300,
+          overflowY: 'auto'
         }}
       >
-        {logText || (isDone ? '(sem output)' : 'Aguardando output...')}
+        {!isDone && (
+          <div style={{ color: '#58a6ff', marginBottom: 8, fontSize: 12 }}>
+            ⟳ Instalando...
+          </div>
+        )}
+        {lines.length === 0 && isDone && (
+          <span style={{ color: '#8b949e' }}>(sem output)</span>
+        )}
+        {lines.map((line, i) => {
+          const type = classifyLine(line)
+          return (
+            <div
+              key={i}
+              style={{ color: LINE_COLORS[type], display: 'flex', gap: 8, lineHeight: 1.5 }}
+            >
+              <span style={{ opacity: 0.7, flexShrink: 0 }}>{LINE_ICONS[type]}</span>
+              <span style={{ wordBreak: 'break-all' }}>{line}</span>
+            </div>
+          )
+        })}
         <div ref={logEndRef} />
-      </pre>
+      </div>
 
       {isDone && (
         <div style={{ display: 'flex', gap: 10 }}>
