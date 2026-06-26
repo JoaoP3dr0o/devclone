@@ -73,6 +73,9 @@ type DevCloneElectronAPI = ElectronAPI & {
 declare global {
   interface Window {
     electron: DevCloneElectronAPI
-    api: unknown
+    api: {
+      forgotPassword: (email: string) => Promise<unknown>
+      resetPassword: (token: string, newPassword: string) => Promise<unknown>
+    }
   }
 }

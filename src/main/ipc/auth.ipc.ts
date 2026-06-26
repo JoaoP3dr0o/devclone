@@ -7,6 +7,7 @@ import {
   logout,
   register,
 } from '../services/auth.service'
+import { apiRequest } from '../services/api.client'
 import { startGoogleAuth } from '../services/google-oauth.service'
 
 export function registerAuthIpc(): void {
@@ -45,4 +46,16 @@ export function registerAuthIpc(): void {
   ipcMain.handle('auth:get-current-user', () => getCurrentUser())
 
   ipcMain.handle('auth:is-authenticated', () => isAuthenticated())
+
+  ipcMain.handle('auth:forgot-password', async (_event, email: unknown) => {
+    if (typeof email !== 'string') throw new Error('Parâmetros inválidos')
+    return apiRequest('POST', '/auth/forgot-password', { email })
+  })
+
+  ipcMain.handle('auth:reset-password', async (_event, token: unknown, newPassword: unknown) => {
+    if (typeof token !== 'string' || typeof newPassword !== 'string') {
+      throw new Error('Parâmetros inválidos')
+    }
+    return apiRequest('POST', '/auth/reset-password', { token, newPassword })
+  })
 }

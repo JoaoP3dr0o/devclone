@@ -2,7 +2,11 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
-const api = {}
+const api = {
+  forgotPassword: (email: string) => ipcRenderer.invoke('auth:forgot-password', email),
+  resetPassword: (token: string, newPassword: string) =>
+    ipcRenderer.invoke('auth:reset-password', token, newPassword),
+}
 const electron = {
   ...electronAPI,
   scanEnvironment: () => ipcRenderer.invoke('scan:environment'),
