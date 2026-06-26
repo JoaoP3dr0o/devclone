@@ -1,8 +1,8 @@
 # DevClone — Checkpoint
 
-**Data:** 2026-06-23
+**Data:** 2026-06-26
 **Branch:** main
-**Último commit:** `279e9e0 chore: configure electron-builder for production build`
+**Último commit:** `263c473 chore: ignore tsbuildinfo build artifacts`
 **Remote:** sincronizado com origin/main
 
 ---
@@ -52,6 +52,10 @@ O DevClone é um app Electron + React + TypeScript que escaneia ferramentas de d
 | **API de produção:** `https://api.devclone.com.br` configurada como fallback em `api.config.ts` | ✅ |
 | **Validação end-to-end em produção:** login email/senha, registro, perfis na nuvem, token persistido | ✅ |
 | **Build do instalador Windows:** `devclone-1.0.0-setup.exe` gerado via `npm run build:win` | ✅ |
+| **Deep link `devclone://` registrado no sistema:** `setAsDefaultProtocolClient` + `electron-builder.yml` (`protocols`) | ✅ |
+| **Recuperação de senha — tela "Esqueci minha senha":** campo de email, chama `POST /auth/forgot-password`, exibe confirmação | ✅ |
+| **Recuperação de senha — deep link:** `devclone://reset-password?token=xxx` capturado no main process e enviado ao renderer via IPC `deep-link` | ✅ |
+| **Recuperação de senha — tela de redefinição:** nova senha + confirmação, valida coincidência, chama `POST /auth/reset-password`, redireciona para login | ✅ |
 | Commits organizados em inglês, GitHub sincronizado | ✅ |
 
 ---
@@ -93,6 +97,8 @@ const data = await apiRequest<AuthResponse>('POST', '/auth/login', { email, pass
 | `auth:logout` | `DELETE /auth/logout` | `auth.service.logout` |
 | `auth:get-current-user` | `GET /users/me` | `auth.service.getCurrentUser` |
 | `auth:is-authenticated` | — (verifica token local) | `auth.service.isAuthenticated` |
+| `auth:forgot-password` | `POST /auth/forgot-password` | `auth.ipc` (inline `apiRequest`) |
+| `auth:reset-password` | `POST /auth/reset-password` | `auth.ipc` (inline `apiRequest`) |
 
 ---
 
@@ -175,7 +181,8 @@ src/
                             loginWithGoogle, logout; profiles[], activeProfileId, loadAllProfiles,
                             createProfile, deleteProfile, setActiveProfile; setProfile() wrapper compat
     pages/
-      AuthPage.tsx        — tela de login/cadastro + botão Google; erros da API inline
+      AuthPage.tsx        — 4 modos: login, register, forgot-password, reset-password;
+                            deep link via window.electron.onDeepLink; botão Google
       Home.tsx            — dashboard + empty state para primeiro uso
       ToolsPage.tsx       — catálogo com filtros, busca, modal de detalhes
       ProfilePage.tsx     — perfil ativo (checkboxes, nome, banner), ProfileManagerModal
@@ -226,12 +233,13 @@ src/
 
 ---
 
-## Marco de produção (2026-06-23)
+## Marco de produção (2026-06-26)
 
 O app está em produção e funcional end-to-end:
 - Login, registro e sincronização de perfis apontam para `https://api.devclone.com.br`
 - Instalador `devclone-1.0.0-setup.exe` gerado e assinado (self-signed via `signtool.exe`)
 - Fluxo validado manualmente: autenticação, criação de perfil, scan, persistência de token
+- Recuperação de senha end-to-end: email → deep link `devclone://reset-password?token=xxx` → redefinição
 
 ---
 
@@ -240,7 +248,14 @@ O app está em produção e funcional end-to-end:
 | Item | Prioridade | Notas |
 |---|---|---|
 | **Google OAuth em produção** | Alta | Callback URL precisa ser registrada no Google Cloud Console apontando para produção |
-| **Recuperação de senha** | Alta | Rota `POST /auth/forgot-password` ainda não implementada na API |
 | **Code signing (certificado EV)** | Média | Elimina o bloqueio do Windows SmartScreen; requer compra de certificado |
 | **Landing page** | Média | Página de marketing / download em `devclone.com.br` |
+| **Suporte Linux e macOS** | Média | Builds e testes nas outras plataformas-alvo |
+| **Validação de senha com feedback visual** | Baixa | Indicador de força da senha, requisitos visíveis ao digitar (polimento UX) |
 | **Auto-update** | Baixa | `electron-updater` com `blockmap` já gerado — falta configurar o servidor de update |
+
+---
+
+## Próximo passo
+
+Suporte Linux e macOS — builds nas outras plataformas-alvo e validação do deep link `devclone://` em cada SO.
