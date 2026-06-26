@@ -7,23 +7,23 @@ type Step = {
 const steps: Step[] = [
   {
     number: '1',
-    title: 'Roteador de navegação',
-    text: 'Integrar react-router-dom para habilitar as telas da sidebar.'
+    title: 'Suporte Linux',
+    text: 'Instalação de ferramentas em distribuições Ubuntu, Fedora e Arch.'
   },
   {
     number: '2',
-    title: 'Instalação guiada',
-    text: 'Preview do comando antes de executar com feedback de progresso em tempo real.'
+    title: 'Suporte macOS',
+    text: 'Instalação via Homebrew e detecção de ambiente Apple Silicon.'
   },
   {
     number: '3',
-    title: 'Estado global',
-    text: 'Migrar scan e plataforma para Context ou Zustand — remover prop drilling.'
+    title: 'Marketplace de perfis',
+    text: 'Compartilhe e descubra perfis da comunidade.'
   },
   {
     number: '4',
-    title: 'Cloud sync',
-    text: 'Login e sincronização de perfis entre máquinas via API remota.'
+    title: 'CLI companion',
+    text: 'Gerencie seu ambiente pelo terminal sem abrir o app.'
   }
 ]
 

@@ -423,9 +423,10 @@ function SettingsPage(): React.JSX.Element {
       {/* Em breve */}
       <SectionHeader title="Em breve" />
       <div style={{ display: 'grid', gap: 8 }}>
-        <ComingSoonCard label="Cloud Sync" />
-        <ComingSoonCard label="Múltiplos perfis" />
-        <ComingSoonCard label="Compartilhar perfil" />
+        <ComingSoonCard label="Suporte Linux — Instalação de ferramentas em distribuições Ubuntu, Fedora e Arch" />
+        <ComingSoonCard label="Suporte macOS — Instalação de ferramentas via Homebrew" />
+        <ComingSoonCard label="Marketplace de perfis — Compartilhe e descubra perfis da comunidade" />
+        <ComingSoonCard label="CLI companion — Gerencie seu ambiente pelo terminal" />
       </div>
     </section>
   )
