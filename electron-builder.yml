@@ -46,3 +46,4 @@ publish:
   provider: github
   owner: JoaoP3dr0o
   repo: devclone
+  releaseType: release
