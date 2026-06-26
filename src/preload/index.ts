@@ -14,10 +14,13 @@ const electron = {
   getInstallCommand: (toolId: string) => ipcRenderer.invoke('install:get-command', toolId),
   getPlatform: () => ipcRenderer.invoke('platform:get'),
   runInstallCommand: (toolId: string) => ipcRenderer.invoke('install:run-command', toolId),
-  onInstallOutput: (callback: (chunk: { type: 'stdout' | 'stderr'; text: string }) => void) => {
+  onInstallOutput: (callback: (chunk: { type: 'stdout' | 'stderr' | 'prompt'; text: string }) => void) => {
     ipcRenderer.on('install:output', (_event, chunk) => callback(chunk))
   },
   removeInstallListeners: () => ipcRenderer.removeAllListeners('install:output'),
+  writeToStdin: (text: string) => ipcRenderer.invoke('install:write-stdin', text),
+  onInstallPrompt: (callback: (text: string) => void) =>
+    ipcRenderer.on('install:prompt', (_event, text) => callback(text)),
   getUserProfile: () => ipcRenderer.invoke('profile:get'),
   saveUserProfile: (profile: unknown) => ipcRenderer.invoke('profile:save', profile),
   getAllProfiles: () => ipcRenderer.invoke('profile:get-all'),

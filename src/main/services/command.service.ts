@@ -1,4 +1,5 @@
 import { exec, spawn } from 'child_process'
+import type { ChildProcess } from 'child_process'
 import { promisify } from 'util'
 
 const execAsync = promisify(exec)
@@ -12,7 +13,22 @@ export async function executeCommand(command: string): Promise<string | null> {
   }
 }
 
-export type OutputChunk = { type: 'stdout' | 'stderr'; text: string }
+export type OutputChunk = { type: 'stdout' | 'stderr' | 'prompt'; text: string }
+
+const INTERACTIVE_PROMPTS = [
+  /\[Y\].*\[N\]/i,
+  /\(y\/n\)/i,
+  /\[yes\/no\]/i,
+  /do you agree/i,
+  /press enter/i,
+  /continue\?/i,
+]
+
+let activeProc: ChildProcess | null = null
+
+export function writeToStdin(text: string): void {
+  activeProc?.stdin?.write(text)
+}
 
 export function spawnCommand(
   command: string,
@@ -21,12 +37,28 @@ export function spawnCommand(
   return new Promise((resolve, reject) => {
     const isWindows = process.platform === 'win32'
     const proc = isWindows
-      ? spawn('cmd', ['/c', command], { windowsHide: true })
-      : spawn('sh', ['-c', command])
+      ? spawn('cmd', ['/c', command], { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] })
+      : spawn('sh', ['-c', command], { stdio: ['pipe', 'pipe', 'pipe'] })
 
-    proc.stdout.on('data', (data: Buffer) => onChunk({ type: 'stdout', text: data.toString() }))
-    proc.stderr.on('data', (data: Buffer) => onChunk({ type: 'stderr', text: data.toString() }))
-    proc.on('close', (code) => resolve({ exitCode: code ?? 0 }))
-    proc.on('error', reject)
+    activeProc = proc
+
+    const handleData = (type: 'stdout' | 'stderr') => (data: Buffer) => {
+      const text = data.toString()
+      onChunk({ type, text })
+      if (INTERACTIVE_PROMPTS.some((re) => re.test(text))) {
+        onChunk({ type: 'prompt', text })
+      }
+    }
+
+    proc.stdout!.on('data', handleData('stdout'))
+    proc.stderr!.on('data', handleData('stderr'))
+    proc.on('close', (code) => {
+      activeProc = null
+      resolve({ exitCode: code ?? 0 })
+    })
+    proc.on('error', (err) => {
+      activeProc = null
+      reject(err)
+    })
   })
 }

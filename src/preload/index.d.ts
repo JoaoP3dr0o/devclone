@@ -12,7 +12,7 @@ import type { CurrentPlatform } from '../shared/platform/platform.types'
 import type { ProfilesStore, UserProfile } from '../shared/profiles/profile.types'
 import type { PreflightResult } from '../shared/tools/preflight.types'
 
-export type InstallOutputChunk = { type: 'stdout' | 'stderr'; text: string }
+export type InstallOutputChunk = { type: 'stdout' | 'stderr' | 'prompt'; text: string }
 export type InstallResult = { success: boolean; exitCode?: number; error?: string }
 export type PreflightFixResult = { success: boolean; error?: string }
 export type AppSettings = { autoScan: boolean }
@@ -27,6 +27,8 @@ type DevCloneElectronAPI = ElectronAPI & {
   runInstallCommand: (toolId: string) => Promise<InstallResult>
   onInstallOutput: (callback: (chunk: InstallOutputChunk) => void) => void
   removeInstallListeners: () => void
+  writeToStdin: (text: string) => Promise<void>
+  onInstallPrompt: (callback: (text: string) => void) => void
   getUserProfile: () => Promise<UserProfile | null>
   saveUserProfile: (profile: UserProfile) => Promise<void>
   getAllProfiles: () => Promise<ProfilesStore>

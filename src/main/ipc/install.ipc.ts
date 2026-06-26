@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
 
 import { toolsCatalog, type ToolCatalogItem } from '../../shared/tools/catalog'
-import { spawnCommand } from '../services/command.service'
+import { spawnCommand, writeToStdin } from '../services/command.service'
 import { getInstallCommand } from '../services/install.service'
 
 function isToolCatalogId(value: unknown): value is ToolCatalogItem['id'] {
@@ -30,10 +30,18 @@ export function registerInstallIpc(): void {
     try {
       const { exitCode } = await spawnCommand(command, (chunk) => {
         event.sender.send('install:output', chunk)
+        if (chunk.type === 'prompt') {
+          event.sender.send('install:prompt', chunk.text)
+        }
       })
       return { success: exitCode === 0, exitCode }
     } catch (err) {
       return { success: false, error: String(err) }
     }
+  })
+
+  ipcMain.handle('install:write-stdin', (_event, text: unknown) => {
+    if (typeof text !== 'string') return
+    writeToStdin(text)
   })
 }
