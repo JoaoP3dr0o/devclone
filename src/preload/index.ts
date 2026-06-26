@@ -14,7 +14,7 @@ const electron = {
   getInstallCommand: (toolId: string) => ipcRenderer.invoke('install:get-command', toolId),
   getPlatform: () => ipcRenderer.invoke('platform:get'),
   runInstallCommand: (toolId: string) => ipcRenderer.invoke('install:run-command', toolId),
-  onInstallOutput: (callback: (chunk: { type: 'stdout' | 'stderr' | 'prompt'; text: string }) => void) => {
+  onInstallOutput: (callback: (chunk: { type: 'stdout' | 'stderr' | 'prompt' | 'progress'; text: string; progress?: number }) => void) => {
     ipcRenderer.on('install:output', (_event, chunk) => callback(chunk))
   },
   removeInstallListeners: () => ipcRenderer.removeAllListeners('install:output'),

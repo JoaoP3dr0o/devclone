@@ -13,7 +13,9 @@ export async function executeCommand(command: string): Promise<string | null> {
   }
 }
 
-export type OutputChunk = { type: 'stdout' | 'stderr' | 'prompt'; text: string }
+export type OutputChunk =
+  | { type: 'stdout' | 'stderr' | 'prompt'; text: string }
+  | { type: 'progress'; text: string; progress: number }
 
 const INTERACTIVE_PROMPTS = [
   /\[Y\].*\[N\]/i,
@@ -30,6 +32,14 @@ export function writeToStdin(text: string): void {
   activeProc?.stdin?.write(text)
 }
 
+function parseProgressFromLine(line: string): number | null {
+  const match = line.match(/[█▒].*?(\d+)\s*%/)
+  if (match) return parseInt(match[1], 10)
+  const sizeMatch = line.match(/([\d.]+)\s*MB\s*\/\s*([\d.]+)\s*MB/)
+  if (sizeMatch) return Math.round((parseFloat(sizeMatch[1]) / parseFloat(sizeMatch[2])) * 100)
+  return null
+}
+
 export function spawnCommand(
   command: string,
   onChunk: (chunk: OutputChunk) => void
@@ -44,7 +54,20 @@ export function spawnCommand(
 
     const handleData = (type: 'stdout' | 'stderr') => (data: Buffer) => {
       const text = data.toString()
-      onChunk({ type, text })
+
+      for (const line of text.split('\n')) {
+        if (/^\s*[-\\|/]\s*$/.test(line)) continue
+        if (line.trim() === '') continue
+
+        const progress = parseProgressFromLine(line)
+        if (progress !== null) {
+          onChunk({ type: 'progress', text: line, progress })
+          continue
+        }
+
+        onChunk({ type, text: line + '\n' })
+      }
+
       if (INTERACTIVE_PROMPTS.some((re) => re.test(text))) {
         onChunk({ type: 'prompt', text })
       }

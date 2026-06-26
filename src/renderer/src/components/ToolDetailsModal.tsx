@@ -28,9 +28,9 @@ function getStatusInsight(tool: DevTool): string {
 }
 
 function classifyLine(line: string): 'error' | 'warning' | 'success' | 'info' {
-  if (/error|failed|falha/i.test(line)) return 'error'
+  if (/error|failed|falha|não foi possível/i.test(line)) return 'error'
   if (/warn|aviso/i.test(line)) return 'warning'
-  if (/success|conclu|instalado|ok|100%/i.test(line)) return 'success'
+  if (/success|conclu|instalado com êxito|verificado com êxito|extraído com êxito|instalado com sucesso/i.test(line)) return 'success'
   return 'info'
 }
 
@@ -52,6 +52,7 @@ function ToolDetailsModal({
   const [outputLog, setOutputLog] = useState<string[]>([])
   const [installResult, setInstallResult] = useState<InstallResult | null>(null)
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null)
+  const [installProgress, setInstallProgress] = useState<number | null>(null)
   const [showPreflight, setShowPreflight] = useState(false)
   const [platformId, setPlatformId] = useState<string>('windows')
   const logEndRef = useRef<HTMLDivElement>(null)
@@ -90,6 +91,7 @@ function ToolDetailsModal({
     setOutputLog([])
     setInstallResult(null)
     setPendingPrompt(null)
+    setInstallProgress(null)
   }, [tool?.id])
 
   useEffect(() => {
@@ -135,8 +137,13 @@ function ToolDetailsModal({
     setOutputLog([])
     setInstallResult(null)
     setPendingPrompt(null)
+    setInstallProgress(null)
 
     window.electron.onInstallOutput((chunk) => {
+      if (chunk.type === 'progress') {
+        setInstallProgress(chunk.progress)
+        return
+      }
       if (chunk.type !== 'prompt') {
         setOutputLog((prev) => [...prev, chunk.text])
       }
@@ -154,6 +161,7 @@ function ToolDetailsModal({
     } finally {
       setInstallPhase('done')
       setPendingPrompt(null)
+      setInstallProgress(null)
       window.electron.removeInstallListeners()
     }
   }
@@ -419,6 +427,7 @@ function ToolDetailsModal({
                 result={installResult}
                 logEndRef={logEndRef}
                 pendingPrompt={pendingPrompt}
+                installProgress={installProgress}
                 onRequestInstall={() => setShowPreflight(true)}
                 onConfirm={handleRunInstall}
                 onCancel={() => setInstallPhase('idle')}
@@ -453,6 +462,7 @@ type InstallSectionProps = {
   result: InstallResult | null
   logEndRef: React.RefObject<HTMLDivElement | null>
   pendingPrompt: string | null
+  installProgress: number | null
   onRequestInstall: () => void
   onConfirm: () => void
   onCancel: () => void
@@ -467,6 +477,7 @@ function InstallSection({
   result,
   logEndRef,
   pendingPrompt,
+  installProgress,
   onRequestInstall,
   onConfirm,
   onCancel,
@@ -563,7 +574,7 @@ function InstallSection({
   }
 
   const isDone = phase === 'done'
-  const lines = outputLog.join('').split('\n').filter(Boolean)
+  const lines = outputLog.join('').split('\n').filter((line) => line.trim().length > 0)
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
@@ -586,6 +597,26 @@ function InstallSection({
           >
             {result?.success ? 'OK' : `exit ${result?.exitCode ?? 1}`}
           </span>
+        </div>
+      )}
+
+      {installProgress !== null && (
+        <div style={{ marginBottom: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+            <span style={{ color: '#58a6ff', fontSize: 12 }}>⬇ Baixando...</span>
+            <span style={{ color: '#8b949e', fontSize: 12 }}>{installProgress}%</span>
+          </div>
+          <div style={{ background: '#30363d', borderRadius: 4, height: 6, overflow: 'hidden' }}>
+            <div
+              style={{
+                background: 'linear-gradient(90deg, #1f6feb, #58a6ff)',
+                height: '100%',
+                width: `${installProgress}%`,
+                transition: 'width 0.3s ease',
+                borderRadius: 4
+              }}
+            />
+          </div>
         </div>
       )}
 

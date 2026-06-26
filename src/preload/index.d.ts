@@ -12,7 +12,9 @@ import type { CurrentPlatform } from '../shared/platform/platform.types'
 import type { ProfilesStore, UserProfile } from '../shared/profiles/profile.types'
 import type { PreflightResult } from '../shared/tools/preflight.types'
 
-export type InstallOutputChunk = { type: 'stdout' | 'stderr' | 'prompt'; text: string }
+export type InstallOutputChunk =
+  | { type: 'stdout' | 'stderr' | 'prompt'; text: string }
+  | { type: 'progress'; text: string; progress: number }
 export type InstallResult = { success: boolean; exitCode?: number; error?: string }
 export type PreflightFixResult = { success: boolean; error?: string }
 export type AppSettings = { autoScan: boolean }
