@@ -7,6 +7,7 @@ import { PLATFORMS } from '../../shared/platform/platform.constants'
 import type { CurrentPlatform, PlatformId } from '../../shared/platform/platform.types'
 
 import { executeCommand } from './command.service'
+import { initLinuxPackageManager } from './linux-pm.service'
 
 const NODE_PLATFORM_TO_ID: Partial<Record<NodeJS.Platform, PlatformId>> = {
   win32: 'windows',
@@ -72,8 +73,10 @@ export async function detectCurrentPlatform(): Promise<CurrentPlatform> {
   let capabilities: CurrentPlatform['capabilities']
 
   if (base.id === 'windows') capabilities = await detectWindowsCapabilities()
-  else if (base.id === 'linux') capabilities = await detectLinuxCapabilities()
-  else capabilities = await detectMacOSCapabilities()
+  else if (base.id === 'linux') {
+    await initLinuxPackageManager()
+    capabilities = await detectLinuxCapabilities()
+  } else capabilities = await detectMacOSCapabilities()
 
   return { ...base, capabilities }
 }

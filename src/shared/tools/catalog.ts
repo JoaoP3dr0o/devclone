@@ -42,7 +42,11 @@ export const toolsCatalog: ToolCatalogItem[] = [
     supportedPlatforms: ALL_PLATFORMS,
     installMethods: {
       windows: 'winget install --id Git.Git -e',
-      linux: 'sudo apt install git -y',
+      linux: {
+        apt: 'sudo apt install git -y',
+        dnf: 'sudo dnf install git -y',
+        pacman: 'sudo pacman -S git --noconfirm'
+      },
       macos: 'brew install git'
     }
   },
@@ -57,7 +61,11 @@ export const toolsCatalog: ToolCatalogItem[] = [
     supportedPlatforms: ALL_PLATFORMS,
     installMethods: {
       windows: 'winget install OpenJS.NodeJS',
-      linux: 'sudo apt install nodejs npm -y',
+      linux: {
+        apt: 'sudo apt install nodejs npm -y',
+        dnf: 'sudo dnf install nodejs -y',
+        pacman: 'sudo pacman -S nodejs --noconfirm'
+      },
       macos: 'brew install node'
     }
   },
@@ -71,7 +79,11 @@ export const toolsCatalog: ToolCatalogItem[] = [
     supportedPlatforms: ALL_PLATFORMS,
     installMethods: {
       windows: 'winget install --id Microsoft.VisualStudioCode -e',
-      linux: 'sudo snap install code --classic',
+      linux: {
+        apt: 'sudo snap install code --classic',
+        // TODO: repo add — requires adding microsoft.com/yumrepos/vscode before dnf install code
+        // TODO: repo add — not in official Arch repos; use AUR (yay -S visual-studio-code-bin)
+      },
       macos: 'brew install --cask visual-studio-code'
     }
   },
@@ -85,7 +97,11 @@ export const toolsCatalog: ToolCatalogItem[] = [
     supportedPlatforms: ALL_PLATFORMS,
     installMethods: {
       windows: 'winget install OpenJS.NodeJS',
-      linux: 'sudo apt install npm -y',
+      linux: {
+        apt: 'sudo apt install npm -y',
+        dnf: 'sudo dnf install npm -y',
+        pacman: 'sudo pacman -S npm --noconfirm'
+      },
       macos: 'brew install node'
     }
   },
@@ -130,7 +146,11 @@ export const toolsCatalog: ToolCatalogItem[] = [
     supportedPlatforms: ALL_PLATFORMS,
     installMethods: {
       windows: 'winget install --id PHP.PHP.8.3 -e',
-      linux: 'sudo apt install php php-cli php-mbstring php-xml php-curl -y',
+      linux: {
+        apt: 'sudo apt install php php-cli php-mbstring php-xml php-curl -y',
+        dnf: 'sudo dnf install php php-cli php-mbstring php-xml php-curl -y',
+        pacman: 'sudo pacman -S php --noconfirm'
+      },
       macos: 'brew install php'
     }
   },
@@ -145,7 +165,11 @@ export const toolsCatalog: ToolCatalogItem[] = [
     requires: ['php'],
     installMethods: {
       windows: 'winget install --id Composer.Composer -e',
-      linux: 'sudo apt install composer -y',
+      linux: {
+        apt: 'sudo apt install composer -y',
+        dnf: 'sudo dnf install composer -y',
+        pacman: 'sudo pacman -S composer --noconfirm'
+      },
       macos: 'brew install composer'
     }
   },
@@ -177,7 +201,11 @@ export const toolsCatalog: ToolCatalogItem[] = [
     supportedPlatforms: ALL_PLATFORMS,
     installMethods: {
       windows: 'winget install Docker.DockerDesktop',
-      linux: 'sudo apt install docker.io -y',
+      linux: {
+        apt: 'sudo apt install docker.io -y',
+        dnf: 'sudo dnf install -y moby-engine',
+        pacman: 'sudo pacman -S docker --noconfirm'
+      },
       macos: 'brew install --cask docker'
     }
   },
@@ -191,7 +219,11 @@ export const toolsCatalog: ToolCatalogItem[] = [
     supportedPlatforms: ALL_PLATFORMS,
     installMethods: {
       windows: 'winget install --id Oracle.MySQL -e',
-      linux: 'sudo apt install mysql-server -y',
+      linux: {
+        apt: 'sudo apt install mysql-server -y',
+        dnf: 'sudo dnf install -y mysql-server',
+        pacman: 'sudo pacman -S mariadb --noconfirm'
+      },
       macos: 'brew install mysql'
     }
   },
@@ -205,7 +237,11 @@ export const toolsCatalog: ToolCatalogItem[] = [
     supportedPlatforms: ALL_PLATFORMS,
     installMethods: {
       windows: 'winget install --id PostgreSQL.PostgreSQL.17 -e',
-      linux: 'sudo apt install postgresql postgresql-contrib -y',
+      linux: {
+        apt: 'sudo apt install postgresql postgresql-contrib -y',
+        dnf: 'sudo dnf install -y postgresql postgresql-server',
+        pacman: 'sudo pacman -S postgresql --noconfirm'
+      },
       macos: 'brew install postgresql@17'
     }
   },
@@ -219,7 +255,11 @@ export const toolsCatalog: ToolCatalogItem[] = [
     supportedPlatforms: ALL_PLATFORMS,
     installMethods: {
       windows: 'winget install --id Postman.Postman -e',
-      linux: 'sudo snap install postman',
+      linux: {
+        apt: 'sudo snap install postman',
+        // TODO: repo add — not in Fedora repos; use flatpak install flathub com.getpostman.Postman
+        // TODO: repo add — not in official Arch repos; use AUR (yay -S postman-bin)
+      },
       macos: 'brew install --cask postman'
     }
   }
