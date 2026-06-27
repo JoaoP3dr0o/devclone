@@ -4,8 +4,9 @@ import type { LinuxPackageManager } from '../../shared/tools/install.types'
 // undefined = not yet probed; null = probed but none found
 let cachedManager: LinuxPackageManager | null | undefined = undefined
 
-export async function initLinuxPackageManager(): Promise<void> {
-  if (process.platform !== 'linux') return
+// platform param exists so tests can inject 'linux' without mocking process
+export async function initLinuxPackageManager(platform = process.platform): Promise<void> {
+  if (platform !== 'linux') return
   if (cachedManager !== undefined) return
 
   const [apt, dnf, pacman] = await Promise.all([

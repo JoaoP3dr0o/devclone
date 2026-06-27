@@ -1,21 +1,22 @@
 import type { PlatformId } from '../../shared/platform/platform.types'
 import { toolsCatalog, type ToolCatalogItem } from '../../shared/tools/catalog'
-import type { InstallMethods } from '../../shared/tools/install.types'
+import type { InstallMethods, LinuxPackageManager } from '../../shared/tools/install.types'
 
 import { getLinuxPackageManager } from './linux-pm.service'
 import { getCurrentPlatform } from './platform.service'
 
-function resolveInstallCommand(
+// Pure function — exported for unit testing
+export function resolveInstallCommand(
   installMethods: InstallMethods,
-  platformId: PlatformId
+  platformId: PlatformId,
+  linuxManager: LinuxPackageManager | null
 ): string | null {
   if (platformId === 'linux') {
     const linux = installMethods.linux
     if (!linux) return null
     if (typeof linux === 'string') return linux
-    const manager = getLinuxPackageManager()
-    if (!manager) return null
-    return linux[manager] ?? null
+    if (!linuxManager) return null
+    return linux[linuxManager] ?? null
   }
   const command = installMethods[platformId]
   return command ?? null
@@ -28,5 +29,5 @@ export function getInstallCommand(toolId: ToolCatalogItem['id']): string | null 
   }
 
   const currentPlatform = getCurrentPlatform()
-  return resolveInstallCommand(tool.installMethods, currentPlatform.id)
+  return resolveInstallCommand(tool.installMethods, currentPlatform.id, getLinuxPackageManager())
 }
